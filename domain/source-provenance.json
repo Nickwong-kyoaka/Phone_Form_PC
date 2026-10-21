@@ -1,0 +1,73 @@
+{
+  "source": "Android 0.9 behavioral baseline",
+  "sourceRepository": "phone_app",
+  "sourceCommit": null,
+  "sourceCommitNote": "No .git directory was available in source checkout; per-file SHA-256 pins the imported content.",
+  "copiedOn": "2026-10-21",
+  "files": [
+    {
+      "path": "apps/android/core/model/src/main/kotlin/com/phoneform/ai/core/model/Collections.kt",
+      "sha256": "8ce27f13a56a7648845a27055081584551b66a1c40b269c0474be86799f4025a"
+    },
+    {
+      "path": "apps/android/core/model/src/main/kotlin/com/phoneform/ai/core/model/Diagnostics.kt",
+      "sha256": "5053fecbea932b85cfbafe7b51e151825632b9375083166781f3727bba81a62e"
+    },
+    {
+      "path": "apps/android/core/model/src/main/kotlin/com/phoneform/ai/core/model/ImageProcessing.kt",
+      "sha256": "d25b49338a6d875a434c95d35d04a37eea5ccaeac6d6836a33113b2546bf028d"
+    },
+    {
+      "path": "apps/android/core/model/src/main/kotlin/com/phoneform/ai/core/model/Models.kt",
+      "sha256": "ca98baf65effaa7a881a182d9f8521fd74e037b41916795da502acfe0d32e6dc"
+    },
+    {
+      "path": "apps/android/core/model/src/main/kotlin/com/phoneform/ai/core/model/ProjectMaintenance.kt",
+      "sha256": "46b4f90bf0bff4b61ea1d1812be4481b023593dd5ff92731aad79af7b8b30084"
+    },
+    {
+      "path": "apps/android/core/model/src/main/kotlin/com/phoneform/ai/core/model/ProjectValidation.kt",
+      "sha256": "d7a52eddbbe5b4983ae347a9849c8cf1359908a66c6a87dee23f1fb94c32628a"
+    },
+    {
+      "path": "apps/android/core/model/src/main/kotlin/com/phoneform/ai/core/model/Recognition.kt",
+      "sha256": "da0d3fa4c8a7abc3a19e875a464e6e0db9e41199b79f268e640aa8ed037047c1"
+    },
+    {
+      "path": "apps/android/core/model/src/main/kotlin/com/phoneform/ai/core/model/Repositories.kt",
+      "sha256": "40ca74a9121e549e25f8c02089b032b72cf8bf6a62bc2b1c1b00323ec0ae978c"
+    },
+    {
+      "path": "apps/android/core/model/src/main/kotlin/com/phoneform/ai/core/model/Templates.kt",
+      "sha256": "565402a45d83248b4e4e0b1005af994799b3113f9dd518120d4e4ad1da01f476"
+    },
+    {
+      "path": "apps/android/core/model/src/main/kotlin/com/phoneform/ai/core/model/TemplateValidation.kt",
+      "sha256": "5688479aa9cba1e2d3dfef0cb91b67dfc696cf394d4b758023edbe1bb98786cf"
+    },
+    {
+      "path": "apps/android/core/model/src/test/kotlin/com/phoneform/ai/core/model/OutputLayoutTest.kt",
+      "sha256": "902cb9c45a03e838c3504be1988edee370e2ef0d860661078e7c41e593d8d8ac"
+    },
+    {
+      "path": "apps/android/core/model/src/test/kotlin/com/phoneform/ai/core/model/PageProcessingFingerprintTest.kt",
+      "sha256": "d24de3565e24d3dcd8814414989eb784f7ad20a52e0d9d49d215426e3dcec289"
+    },
+    {
+      "path": "apps/android/core/model/src/test/kotlin/com/phoneform/ai/core/model/ProjectOperationGateTest.kt",
+      "sha256": "f2fe6459fae78eedab066d02dd152ced6e751a366f2bc3096edf5e82c1699f1e"
+    },
+    {
+      "path": "apps/android/core/model/src/test/kotlin/com/phoneform/ai/core/model/ProjectValidationTest.kt",
+      "sha256": "406b28ceba6b77e573ca66cf4718b5bf520fdde8ca9c547f99b1a188c540dee7"
+    },
+    {
+      "path": "apps/android/core/model/src/test/kotlin/com/phoneform/ai/core/model/ReviewValidationTest.kt",
+      "sha256": "101ca316ad743ae895d5785fd115b0cf71cab85ac68ce7a0bc215279d6324f8b"
+    },
+    {
+      "path": "apps/android/core/model/src/test/kotlin/com/phoneform/ai/core/model/TemplateValidationTest.kt",
+      "sha256": "9a5c619b1c2e26a525e4fa58c44829d712d3977c84f121a85758bd28e0f7e55f"
+    }
+  ]
+}

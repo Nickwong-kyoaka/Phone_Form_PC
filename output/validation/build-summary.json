@@ -1,0 +1,265 @@
+{
+  "appVersion": "0.2.0-dev",
+  "checkedAt": "2026-10-21T17:52:59.8831581+08:00",
+  "platform": "Windows x64",
+  "tests": {
+    "total": 92,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "suites": [
+      {
+        "module": "domain",
+        "name": "com.phoneform.ai.core.model.LanguageSeparationTest",
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "report": "domain\\build\\test-results\\test\\TEST-com.phoneform.ai.core.model.LanguageSeparationTest.xml",
+        "reportModifiedAt": "2026-10-21T15:26:00.7733505+08:00"
+      },
+      {
+        "module": "domain",
+        "name": "com.phoneform.ai.core.model.OutputLayoutTest",
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "report": "domain\\build\\test-results\\test\\TEST-com.phoneform.ai.core.model.OutputLayoutTest.xml",
+        "reportModifiedAt": "2026-10-21T15:26:00.7733505+08:00"
+      },
+      {
+        "module": "domain",
+        "name": "com.phoneform.ai.core.model.PageProcessingFingerprintTest",
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "report": "domain\\build\\test-results\\test\\TEST-com.phoneform.ai.core.model.PageProcessingFingerprintTest.xml",
+        "reportModifiedAt": "2026-10-21T15:26:00.7733505+08:00"
+      },
+      {
+        "module": "domain",
+        "name": "com.phoneform.ai.core.model.ProjectOperationGateTest",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "report": "domain\\build\\test-results\\test\\TEST-com.phoneform.ai.core.model.ProjectOperationGateTest.xml",
+        "reportModifiedAt": "2026-10-21T15:26:00.7733505+08:00"
+      },
+      {
+        "module": "domain",
+        "name": "com.phoneform.ai.core.model.ProjectValidationTest",
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "report": "domain\\build\\test-results\\test\\TEST-com.phoneform.ai.core.model.ProjectValidationTest.xml",
+        "reportModifiedAt": "2026-10-21T15:26:00.7733505+08:00"
+      },
+      {
+        "module": "domain",
+        "name": "com.phoneform.ai.core.model.ReviewValidationTest",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "report": "domain\\build\\test-results\\test\\TEST-com.phoneform.ai.core.model.ReviewValidationTest.xml",
+        "reportModifiedAt": "2026-10-21T15:26:00.7733505+08:00"
+      },
+      {
+        "module": "domain",
+        "name": "com.phoneform.ai.core.model.TemplateValidationTest",
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "report": "domain\\build\\test-results\\test\\TEST-com.phoneform.ai.core.model.TemplateValidationTest.xml",
+        "reportModifiedAt": "2026-10-21T15:26:00.7733505+08:00"
+      },
+      {
+        "module": "excel",
+        "name": "com.phoneform.ai.core.data.ExportLanguageTest",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "report": "excel\\build\\test-results\\test\\TEST-com.phoneform.ai.core.data.ExportLanguageTest.xml",
+        "reportModifiedAt": "2026-10-21T15:26:01.6361911+08:00"
+      },
+      {
+        "module": "excel",
+        "name": "com.phoneform.ai.core.data.ExportLayoutWorkbookTest",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "report": "excel\\build\\test-results\\test\\TEST-com.phoneform.ai.core.data.ExportLayoutWorkbookTest.xml",
+        "reportModifiedAt": "2026-10-21T15:26:01.6361911+08:00"
+      },
+      {
+        "module": "excel",
+        "name": "com.phoneform.ai.core.data.XlsxWriterTest",
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "report": "excel\\build\\test-results\\test\\TEST-com.phoneform.ai.core.data.XlsxWriterTest.xml",
+        "reportModifiedAt": "2026-10-21T15:26:01.6361911+08:00"
+      },
+      {
+        "module": "data",
+        "name": "com.phoneform.desktop.data.DesktopRepositoriesTest",
+        "tests": 9,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "report": "data\\build\\test-results\\test\\TEST-com.phoneform.desktop.data.DesktopRepositoriesTest.xml",
+        "reportModifiedAt": "2026-10-21T17:16:24.4598384+08:00"
+      },
+      {
+        "module": "data",
+        "name": "com.phoneform.desktop.security.PdfClientTest",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "report": "data\\build\\test-results\\test\\TEST-com.phoneform.desktop.security.PdfClientTest.xml",
+        "reportModifiedAt": "2026-10-21T17:16:24.4598384+08:00"
+      },
+      {
+        "module": "data",
+        "name": "com.phoneform.desktop.security.SecureWorkspaceTest",
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "report": "data\\build\\test-results\\test\\TEST-com.phoneform.desktop.security.SecureWorkspaceTest.xml",
+        "reportModifiedAt": "2026-10-21T17:16:24.4598384+08:00"
+      },
+      {
+        "module": "vision",
+        "name": "com.phoneform.desktop.vision.DesktopVisionTest",
+        "tests": 9,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "report": "vision\\build\\test-results\\test\\TEST-com.phoneform.desktop.vision.DesktopVisionTest.xml",
+        "reportModifiedAt": "2026-10-21T15:43:47.2169135+08:00"
+      },
+      {
+        "module": "vision",
+        "name": "com.phoneform.desktop.vision.OfflineOcrTest",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "report": "vision\\build\\test-results\\test\\TEST-com.phoneform.desktop.vision.OfflineOcrTest.xml",
+        "reportModifiedAt": "2026-10-21T15:43:47.2169135+08:00"
+      },
+      {
+        "module": "vision",
+        "name": "com.phoneform.desktop.vision.TemplateCandidateDetectorTest",
+        "tests": 12,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "report": "vision\\build\\test-results\\test\\TEST-com.phoneform.desktop.vision.TemplateCandidateDetectorTest.xml",
+        "reportModifiedAt": "2026-10-21T15:43:47.2169135+08:00"
+      },
+      {
+        "module": "desktop",
+        "name": "com.phoneform.desktop.CanvasPreferenceTest",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "report": "desktop\\build\\test-results\\test\\TEST-com.phoneform.desktop.CanvasPreferenceTest.xml",
+        "reportModifiedAt": "2026-10-21T17:27:59.1811199+08:00"
+      },
+      {
+        "module": "desktop",
+        "name": "com.phoneform.desktop.DataPresentationTest",
+        "tests": 8,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "report": "desktop\\build\\test-results\\test\\TEST-com.phoneform.desktop.DataPresentationTest.xml",
+        "reportModifiedAt": "2026-10-21T17:27:59.1811199+08:00"
+      },
+      {
+        "module": "desktop",
+        "name": "com.phoneform.desktop.DesktopControllerTest",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "report": "desktop\\build\\test-results\\test\\TEST-com.phoneform.desktop.DesktopControllerTest.xml",
+        "reportModifiedAt": "2026-10-21T17:27:59.1811199+08:00"
+      },
+      {
+        "module": "desktop",
+        "name": "com.phoneform.desktop.DesktopUiStateTest",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "report": "desktop\\build\\test-results\\test\\TEST-com.phoneform.desktop.DesktopUiStateTest.xml",
+        "reportModifiedAt": "2026-10-21T17:27:59.1811199+08:00"
+      },
+      {
+        "module": "desktop",
+        "name": "com.phoneform.desktop.DesktopWorkflowTest",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "report": "desktop\\build\\test-results\\test\\TEST-com.phoneform.desktop.DesktopWorkflowTest.xml",
+        "reportModifiedAt": "2026-10-21T17:27:59.1811199+08:00"
+      }
+    ]
+  },
+  "commands": [
+    {
+      "command": ".\\scripts\\Invoke-Build.ps1 -Tasks test,:desktop:createDistributable,:desktop:packageMsi",
+      "result": "PASS"
+    },
+    {
+      "command": ".\\scripts\\Invoke-Build.ps1 -Tasks :desktop:test,:desktop:createDistributable,:desktop:packageMsi",
+      "result": "PASS",
+      "reason": "Final answer-recovery protection"
+    },
+    {
+      "command": ".\\scripts\\Invoke-Build.ps1 -Tasks :desktop:createDistributable,:desktop:packageMsi",
+      "result": "PASS",
+      "reason": "Final palette and text-only refinement"
+    },
+    {
+      "command": ".\\scripts\\Verify-Runtime.ps1 -ApplicationDirectory .\\desktop\\build\\compose\\binaries\\main\\app\\PhoneForm AI PC",
+      "result": "PASS"
+    }
+  ],
+  "msi": {
+    "file": "output/PhoneForm-AI-PC-0.2.0-dev.msi",
+    "bytes": 160411871,
+    "sha256": "95a827947aa34afe1a1587f62656e41631fe901340861d0ba3ce4b0a5aa0c240"
+  },
+  "runtimeInventory": "PASS",
+  "uiAcceptance": {
+    "result": "PARTIAL",
+    "evidence": "output/validation/uiux-0.2.0/acceptance.json"
+  },
+  "excelNative": {
+    "result": "PASS",
+    "evidence": "output/validation/uiux-0.2.0/excel-native.json",
+    "workbooks": 3,
+    "recordsEach": 30
+  },
+  "independentXlsx": {
+    "result": "PASS",
+    "evidence": "output/validation/uiux-0.2.0/xlsx-static.json"
+  },
+  "releaseAcceptance": "PARTIAL: see 工作阶段.md",
+  "baselineSummary": "output/validation/build-summary-0.1.0.json"
+}

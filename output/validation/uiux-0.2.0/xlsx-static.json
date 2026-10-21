@@ -1,0 +1,184 @@
+{
+  "version": "0.2.0",
+  "checkedAtUtc": "2026-10-21T09:30:10.173961+00:00",
+  "method": "Independent Python standard library zipfile + ElementTree, read-only; not application XLSX validator",
+  "command": "bundled-python .local/uiux-xlsx-audit.py <PC_app>",
+  "workbooks": [
+    {
+      "file": "workflow-30-ENGLISH.xlsx",
+      "bytes": 11222,
+      "sha256": "5469ef53f9694c949adb42fc370d243e18edba405b30323b80ed19ad490662cc",
+      "result": "PASS",
+      "headerLanguage": "ENGLISH",
+      "sheets": {
+        "Responses": {
+          "rowsIncludingHeader": 31,
+          "columns": 15
+        },
+        "Codebook": {
+          "rowsIncludingHeader": 16,
+          "columns": 9
+        },
+        "Review_Flags": {
+          "rowsIncludingHeader": 61,
+          "columns": 5
+        },
+        "Summary": {
+          "rowsIncludingHeader": 9,
+          "columns": 2
+        }
+      },
+      "records": 30,
+      "uniqueRecordIds": 30,
+      "formulaNodes": 0,
+      "relationshipsChecked": 6,
+      "leadingZeroCell": {
+        "address": "Responses!G2",
+        "type": "inlineStr",
+        "value": "00001"
+      },
+      "literalFormulaShapeCell": {
+        "address": "Responses!O2",
+        "type": "inlineStr",
+        "value": "=1+1"
+      },
+      "included": "30",
+      "excluded": "0",
+      "includePersonalIdentifiers": "false"
+    },
+    {
+      "file": "workflow-30-SIMPLIFIED.xlsx",
+      "bytes": 11441,
+      "sha256": "9ed13a5ea28fe0d5d99cf501e47bf61833ca4722a65d68ed1ba2c72b2081f084",
+      "result": "PASS",
+      "headerLanguage": "SIMPLIFIED",
+      "sheets": {
+        "Responses": {
+          "rowsIncludingHeader": 31,
+          "columns": 15
+        },
+        "Codebook": {
+          "rowsIncludingHeader": 16,
+          "columns": 9
+        },
+        "Review_Flags": {
+          "rowsIncludingHeader": 61,
+          "columns": 5
+        },
+        "Summary": {
+          "rowsIncludingHeader": 9,
+          "columns": 2
+        }
+      },
+      "records": 30,
+      "uniqueRecordIds": 30,
+      "formulaNodes": 0,
+      "relationshipsChecked": 6,
+      "leadingZeroCell": {
+        "address": "Responses!G2",
+        "type": "inlineStr",
+        "value": "00001"
+      },
+      "literalFormulaShapeCell": {
+        "address": "Responses!O2",
+        "type": "inlineStr",
+        "value": "=1+1"
+      },
+      "included": "30",
+      "excluded": "0",
+      "includePersonalIdentifiers": "false"
+    },
+    {
+      "file": "workflow-30-TRADITIONAL.xlsx",
+      "bytes": 11434,
+      "sha256": "712891e563cc10fc7941f67321abd02b5e7cad71e90dae9c2d0f3ffe7c8531db",
+      "result": "PASS",
+      "headerLanguage": "TRADITIONAL",
+      "sheets": {
+        "Responses": {
+          "rowsIncludingHeader": 31,
+          "columns": 15
+        },
+        "Codebook": {
+          "rowsIncludingHeader": 16,
+          "columns": 9
+        },
+        "Review_Flags": {
+          "rowsIncludingHeader": 61,
+          "columns": 5
+        },
+        "Summary": {
+          "rowsIncludingHeader": 9,
+          "columns": 2
+        }
+      },
+      "records": 30,
+      "uniqueRecordIds": 30,
+      "formulaNodes": 0,
+      "relationshipsChecked": 6,
+      "leadingZeroCell": {
+        "address": "Responses!G2",
+        "type": "inlineStr",
+        "value": "00001"
+      },
+      "literalFormulaShapeCell": {
+        "address": "Responses!O2",
+        "type": "inlineStr",
+        "value": "=1+1"
+      },
+      "included": "30",
+      "excluded": "0",
+      "includePersonalIdentifiers": "false"
+    }
+  ],
+  "historicalNativeEvidenceComparison": [
+    {
+      "file": "workflow-30-ENGLISH.xlsx",
+      "recordedSha256": "2ac6092024c86da0af56a033404a35a61d06c045cd607ede7a910dfe495c2e05",
+      "currentSha256": "dd7823336d4ec4c91f28d9d469043af18ee20697deccf76a10b44f07714f8b91",
+      "matchesRecordedNativeEvidence": false,
+      "nativeEvidenceAppliesToCurrentBytes": false
+    },
+    {
+      "file": "workflow-1000-TRADITIONAL.xlsx",
+      "recordedSha256": "52997ba7ce9100cf982e373b5c26f8a1b378b8359646022f4bfb65dcba3bb618",
+      "currentSha256": "52997ba7ce9100cf982e373b5c26f8a1b378b8359646022f4bfb65dcba3bb618",
+      "matchesRecordedNativeEvidence": true,
+      "nativeEvidenceAppliesToCurrentBytes": true
+    },
+    {
+      "file": "workflow-1000-SIMPLIFIED.xlsx",
+      "recordedSha256": "19fcb3496540dd951e9cba5acb22d960a611856c32b4aab5853cccf25e28d9a2",
+      "currentSha256": "19fcb3496540dd951e9cba5acb22d960a611856c32b4aab5853cccf25e28d9a2",
+      "matchesRecordedNativeEvidence": true,
+      "nativeEvidenceAppliesToCurrentBytes": true
+    },
+    {
+      "file": "workflow-1000-ENGLISH.xlsx",
+      "recordedSha256": "c61c2696aff6bfb23d9987d7193f5b0205f6a026d9c26058cb567b572fc51deb",
+      "currentSha256": "c61c2696aff6bfb23d9987d7193f5b0205f6a026d9c26058cb567b572fc51deb",
+      "matchesRecordedNativeEvidence": true,
+      "nativeEvidenceAppliesToCurrentBytes": true
+    },
+    {
+      "file": "workflow-30-TRADITIONAL.xlsx",
+      "recordedSha256": "f5f1b3668cc96a7d27c3684289afb9d2affff2248f771225a41492e46264dfa7",
+      "currentSha256": "ddb1aed73742e7b9583eec87b202ceef9b50977072a696f43f2ba33539900ab7",
+      "matchesRecordedNativeEvidence": false,
+      "nativeEvidenceAppliesToCurrentBytes": false
+    },
+    {
+      "file": "workflow-30-SIMPLIFIED.xlsx",
+      "recordedSha256": "b0c5ae6547f05566a1a06d9016f1d76e98205d1410b097752ba2e3fe02c2e6ea",
+      "currentSha256": "cf4df88b223dfa3e3655999c67e42144a5609c1063cb1ae1c417f3e3cc636ef5",
+      "matchesRecordedNativeEvidence": false,
+      "nativeEvidenceAppliesToCurrentBytes": false
+    }
+  ],
+  "crossLanguageAnswerParity": true,
+  "result": "PASS",
+  "limitations": [
+    "ZIP/XML checks do not establish native Microsoft Excel opening behavior; root agent owns that check.",
+    "Synthetic 30-record human-review fixture; no OCR-accuracy claim."
+  ]
+}

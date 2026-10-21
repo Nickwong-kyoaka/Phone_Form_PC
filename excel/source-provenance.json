@@ -1,0 +1,25 @@
+{
+  "source": "Android 0.9 behavioral baseline",
+  "sourceRepository": "phone_app",
+  "sourceCommit": null,
+  "sourceCommitNote": "No .git directory was available in source checkout; per-file SHA-256 pins the imported content.",
+  "copiedOn": "2026-10-21",
+  "files": [
+    {
+      "path": "apps/android/core/data/src/main/kotlin/com/phoneform/ai/core/data/ExportSheetBuilder.kt",
+      "sha256": "5c7fc6b4bb791846f7951b46db6ae1265c82c58e4585980ab28f51d4b5586bf3"
+    },
+    {
+      "path": "apps/android/core/data/src/main/kotlin/com/phoneform/ai/core/data/XlsxWriter.kt",
+      "sha256": "b4fcfddf106e87fcbe3320fb12b2c59268d83ab56b16dc3827cdc7dc18cdb22e"
+    },
+    {
+      "path": "apps/android/core/data/src/test/kotlin/com/phoneform/ai/core/data/ExportLayoutWorkbookTest.kt",
+      "sha256": "34a830b0c41a7d877925cf9d451f37dfb7745dfe204bd8044d645875b89acc4a"
+    },
+    {
+      "path": "apps/android/core/data/src/test/kotlin/com/phoneform/ai/core/data/XlsxWriterTest.kt",
+      "sha256": "256749e1756b6d55a32743b7a67efb42ed586639c9eb07f31309fe25d5691ad1"
+    }
+  ]
+}

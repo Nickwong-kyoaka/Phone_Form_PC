@@ -1,0 +1,27 @@
+{
+  "source": "https://github.com/tesseract-ocr/tessdata_best",
+  "commit": "e12c65a915945e4c28e237a9b52bc4a8f39a0cec",
+  "engine": "Tesseract LSTM, tessdata_best",
+  "files": [
+    {
+      "name": "eng.traineddata",
+      "gitBlobSha1": "176dc3220de7db34d3b3aecbfa42043a6038348b",
+      "sha256": "8280aed0782fe27257a68ea10fe7ef324ca0f8d85bd2fd145d1c2b560bcb66ba"
+    },
+    {
+      "name": "chi_sim.traineddata",
+      "gitBlobSha1": "da7fa49ded2895ebe974c6ea3a6cc1af8595f1af",
+      "sha256": "4fef2d1306c8e87616d4d3e4c6c67faf5d44be3342290cf8f2f0f6e3aa7e735b"
+    },
+    {
+      "name": "chi_tra.traineddata",
+      "gitBlobSha1": "c1dd109cd5bbec27381f578e9a425cef88466244",
+      "sha256": "1aa60488574cafa69486d919284f079ca9b68fcc7f6ad8dc1ff1b318dfd97028"
+    },
+    {
+      "name": "LICENSE",
+      "gitBlobSha1": "d9a10c0d8e868ebf8da0b3dc95bb0be634c34bfe",
+      "sha256": "a6cba85bc92e0cff7a450b1d873c0eaa2e9fc96bf472df0247a26bec77bf3ff9"
+    }
+  ]
+}

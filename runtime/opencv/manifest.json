@@ -1,0 +1,20 @@
+{
+  "version": "4.12.0",
+  "platform": "windows-x86_64",
+  "source": "https://github.com/opencv/opencv/releases/tag/4.12.0",
+  "archiveSha256": "b753b14d880b9bc8d89d6acd3b665c040baec0211078435432fcae117db707af",
+  "files": [
+    {
+      "name": "LICENSE",
+      "sha256": "3ddf9be5c28fe27dad143a5dc76eea25222ad1dd68934a047064e56ed2fa40c5"
+    },
+    {
+      "name": "opencv_java4120.dll",
+      "sha256": "aca5d9a9bc8067434d793402269a18aa18a4e033c96d44707686d30ff162abb9"
+    },
+    {
+      "name": "opencv-4120.jar",
+      "sha256": "e5e9f0248daecd6b29eb6947d256ebaa2918e3fd555a01cf182ff3e811743727"
+    }
+  ]
+}

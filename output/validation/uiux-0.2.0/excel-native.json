@@ -1,0 +1,87 @@
+{
+  "appVersion": "0.2.0-dev",
+  "checkedAt": "2026-10-21T09:52:58.952Z",
+  "excelVersion": "16.0.20430.20182",
+  "method": "Observed through Windows Computer Use in installed Microsoft Excel; no workbook saves",
+  "result": "PASS",
+  "workbooks": [
+    {
+      "file": "workflow-30-ENGLISH.xlsx",
+      "sha256": "5469ef53f9694c949adb42fc370d243e18edba405b30323b80ed19ad490662cc",
+      "unchangedAfterNativeInspection": true,
+      "openedInMicrosoftExcel": true,
+      "repairPromptObserved": false,
+      "visibleSheetTabs": [
+        "Responses",
+        "Codebook",
+        "Review_Flags",
+        "Summary"
+      ],
+      "inspectedSheets": [
+        "Responses",
+        "Summary"
+      ],
+      "included": 30,
+      "excluded": 0,
+      "includePersonalIdentifiers": false
+    },
+    {
+      "file": "workflow-30-SIMPLIFIED.xlsx",
+      "sha256": "9ed13a5ea28fe0d5d99cf501e47bf61833ca4722a65d68ed1ba2c72b2081f084",
+      "unchangedAfterNativeInspection": true,
+      "openedInMicrosoftExcel": true,
+      "repairPromptObserved": false,
+      "visibleSheetTabs": [
+        "Responses",
+        "Codebook",
+        "Review_Flags",
+        "Summary"
+      ],
+      "inspectedSheets": [
+        "Responses",
+        "Summary"
+      ],
+      "included": 30,
+      "excluded": 0,
+      "includePersonalIdentifiers": false
+    },
+    {
+      "file": "workflow-30-TRADITIONAL.xlsx",
+      "sha256": "712891e563cc10fc7941f67321abd02b5e7cad71e90dae9c2d0f3ffe7c8531db",
+      "unchangedAfterNativeInspection": true,
+      "openedInMicrosoftExcel": true,
+      "repairPromptObserved": false,
+      "visibleSheetTabs": [
+        "Responses",
+        "Codebook",
+        "Review_Flags",
+        "Summary"
+      ],
+      "inspectedSheets": [
+        "Responses",
+        "Summary"
+      ],
+      "included": 30,
+      "excluded": 0,
+      "includePersonalIdentifiers": false
+    }
+  ],
+  "englishCellChecks": {
+    "Responses!G2": {
+      "display": "00001",
+      "result": "PASS"
+    },
+    "Responses!O2": {
+      "display": "=1+1",
+      "result": "PASS",
+      "calculatedTo2": false
+    }
+  },
+  "screenshots": [
+    "excel-traditional-summary.png",
+    "excel-simplified-summary.png",
+    "excel-english-summary.png",
+    "excel-english-leading-zero.png",
+    "excel-english-literal.png"
+  ]
+}

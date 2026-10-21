@@ -1,0 +1,35 @@
+{
+  "appVersion": "0.2.0-dev",
+  "checkedAt": "2026-10-21T09:52:58.953Z",
+  "implementation": "PC-UX1 through PC-UX4 implemented",
+  "verification": "PARTIAL",
+  "syntheticWorkspace": ".local/uiux-acceptance-20261021",
+  "dataOrigin": "30 backend-seeded synthetic submissions, two shared fixture images; additional empty draft31 created through UI",
+  "verified": [
+    "Packaged PhoneForm AI PC.exe opens with bundled runtime",
+    "Traditional light template and review table/workspace",
+    "English dark settings, review workspace and export fields",
+    "Simplified light review and collection",
+    "Window width approx949px: Image/Edit switches retain selected question and answer",
+    "Ctrl+S while answer editor focused saves and selects next target",
+    "Whole submission confirmation succeeds after save",
+    "Application exit returns code0",
+    "Restart restores selected project, collection section and draft31 without incrementing submitted30",
+    "Final blue/gray palette rendered by delivered EXE"
+  ],
+  "pending": [
+    "Complete manual create-template-import-review-export journey in each UI language",
+    "Windows100/150/200percent DPI acceptance matrix",
+    "New UI with1000submissions and scrolling/thumbnail measurements",
+    "Drag/drop, full import/dialog/keyboard/tray journey",
+    "Clean Windows MSI installation and upgrade; pre-existing PC release fault matrix"
+  ],
+  "finalPreview": "preview.png",
+  "notes": [
+    "Screenshots contain synthetic data only",
+    "Other screenshots capture the same development version during validation; preview.png uses final delivered palette",
+    "Previous0.1 native evidence is historical; old30 workbook paths were regenerated, old1000 workbook hashes still match"
+  ],
+  "excelNative": "excel-native.json",
+  "xlsxStatic": "xlsx-static.json"
+}

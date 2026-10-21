@@ -1,0 +1,47 @@
+PhoneForm AI PC 0.1.0-dev — Third-party component inventory
+
+This application contains open-source components. The component licenses and
+notices embedded in the dependency JARs and the bundled runtime remain applicable.
+This inventory does not replace those licenses.
+
+Kotlin / kotlinx.coroutines — Apache-2.0
+https://github.com/JetBrains/kotlin
+https://github.com/Kotlin/kotlinx.coroutines
+Compose Multiplatform / AndroidX Compose — Apache-2.0
+https://github.com/JetBrains/compose-multiplatform
+Skiko — Apache-2.0; Skia — BSD-style notices in the native distribution
+https://github.com/JetBrains/skiko
+https://skia.googlesource.com/skia/+/main/LICENSE
+Gson / Tink Java — Apache-2.0
+https://github.com/google/gson
+https://github.com/tink-crypto/tink-java
+SQLite JDBC (Willena / Xerial) — retain Apache-2.0 and BSD notices in JAR
+https://github.com/Willena/sqlite-jdbc-crypt
+https://github.com/xerial/sqlite-jdbc
+SQLite3 Multiple Ciphers — MIT; SQLite — public domain
+https://github.com/utelle/SQLite3MultipleCiphers
+JNA / jna-platform — Apache-2.0 or LGPL-2.1; Apache-2.0 option selected
+https://github.com/java-native-access/jna
+Apache PDFBox / FontBox / PDFBox IO / Commons Logging — Apache-2.0
+https://pdfbox.apache.org/
+Tess4J / Tesseract / tessdata_best — Apache-2.0
+https://github.com/nguyenq/tess4j
+https://github.com/tesseract-ocr/tesseract
+https://github.com/tesseract-ocr/tessdata_best
+Leptonica and native image codecs — BSD-style and upstream codec licenses
+https://github.com/DanBloomberg/leptonica
+OpenCV 4.12.0 — Apache-2.0, third-party notices in official distribution
+https://github.com/opencv/opencv
+SLF4J — MIT
+https://github.com/qos-ch/slf4j
+Eclipse Temurin OpenJDK 21 — GPL-2.0 with Classpath Exception
+https://adoptium.net/
+OpenJDK runtime legal notices are included in the runtime/legal directory.
+
+Pinned model commit and individual model SHA256 are in models/manifest.json.
+Official OpenCV source archive SHA and extracted asset hashes are in
+opencv/manifest.json. Respective upstream LICENSE files are copied alongside.
+
+The first build is an internal evaluation release. A complete redistributable
+native codec / VC++ runtime and transitive notice audit, and clean-machine
+installer verification, remain release gates tracked in 工作阶段.md.

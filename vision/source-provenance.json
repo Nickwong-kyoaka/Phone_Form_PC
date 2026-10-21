@@ -1,0 +1,32 @@
+{
+  "source": "Android 0.9 geometry, OMR, candidate detection and quality algorithms; OCR adapted to desktop Tess4J",
+  "sourceCommit": null,
+  "sourceCommitNote": "No .git checkout metadata was available; per-file SHA-256 pins source.",
+  "portedOn": "2026-10-21",
+  "files": [
+    {
+      "path": "apps/android/app/src/main/java/com/phoneform/ai/recognition/OpenCvGeometry.kt",
+      "sha256": "f327759e070a014932c4614a99d97f8e8313da421de2d185561c083af358dcca"
+    },
+    {
+      "path": "apps/android/app/src/main/java/com/phoneform/ai/recognition/PageImageProcessor.kt",
+      "sha256": "367ec8f6a88b4b92ab5c44068f0b941198b0244229a755ffe6988616b23ba02b"
+    },
+    {
+      "path": "apps/android/app/src/main/java/com/phoneform/ai/recognition/TemplateCandidateDetector.kt",
+      "sha256": "d0f004eaca1ef4c61415229034cac74af4be999e1e9cc25ea36bf7e9b195c678"
+    },
+    {
+      "path": "apps/android/app/src/main/java/com/phoneform/ai/recognition/LocalOcrEngine.kt",
+      "sha256": "7bd58ec7f4f5d092dd68dc4a89e5ec518babecd0df61292035ceb990cf643a30"
+    },
+    {
+      "path": "apps/android/app/src/main/java/com/phoneform/ai/recognition/LocalVisionEngine.kt",
+      "sha256": "23d47d88af949c9b84810a5c1bf17f334df7344751708cc5a76e56be38dfa2bf"
+    },
+    {
+      "path": "apps/android/app/src/test/java/com/phoneform/ai/recognition/TemplateCandidateDetectorTest.kt",
+      "sha256": "20627f69c17a7285582977351288d198526a6a0312abc915d499ab14c4654c99"
+    }
+  ]
+}
