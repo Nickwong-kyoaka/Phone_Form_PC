@@ -1,0 +1,68 @@
+{
+  "checkedAt": "2026-10-21T18:29:22.4604001+08:00",
+  "repository": "https://github.com/Nickwong-kyoaka/Phone_Form_PC",
+  "authenticatedLogin": "Nickwong-kyoaka",
+  "commitAuthor": "Nickwong-kyoaka <wongnick.kyoaka@gmail.com>",
+  "commitCommitter": "Nickwong-kyoaka <wongnick.kyoaka@gmail.com>",
+  "releases": [
+    {
+      "tag": "v0.1.0-dev",
+      "commit": "3f69da3ec8ae73a1dd49fea4dc7b6af6b51f3da9",
+      "author": "Nickwong-kyoaka",
+      "url": "https://github.com/Nickwong-kyoaka/Phone_Form_PC/releases/tag/v0.1.0-dev",
+      "draft": false,
+      "prerelease": true,
+      "assets": [
+        {
+          "name": "PhoneForm-AI-PC-0.1.0-dev.msi",
+          "bytes": 159695075,
+          "sha256": "e00ef974557c3d7520b6530b97f367dc9ab41aa65496b165d5e4fee2aa38c9ea",
+          "uploader": "Nickwong-kyoaka",
+          "url": "https://github.com/Nickwong-kyoaka/Phone_Form_PC/releases/download/v0.1.0-dev/PhoneForm-AI-PC-0.1.0-dev.msi",
+          "assetId": 662134886,
+          "githubDigest": "sha256:e00ef974557c3d7520b6530b97f367dc9ab41aa65496b165d5e4fee2aa38c9ea"
+        },
+        {
+          "name": "PhoneForm-AI-PC-0.1.0-dev.msi.sha256",
+          "bytes": 97,
+          "sha256": "71120c1091b90617dbdec98a5e113735d4774eda55da7293ded01552a0672502",
+          "uploader": "Nickwong-kyoaka",
+          "url": "https://github.com/Nickwong-kyoaka/Phone_Form_PC/releases/download/v0.1.0-dev/PhoneForm-AI-PC-0.1.0-dev.msi.sha256",
+          "assetId": 662135999,
+          "githubDigest": "sha256:71120c1091b90617dbdec98a5e113735d4774eda55da7293ded01552a0672502"
+        }
+      ],
+      "publicWithoutAuthentication": true
+    },
+    {
+      "tag": "v0.2.0-dev",
+      "commit": "6a1113d673be23593d6d3df9b5191e296eb3ff45",
+      "author": "Nickwong-kyoaka",
+      "url": "https://github.com/Nickwong-kyoaka/Phone_Form_PC/releases/tag/v0.2.0-dev",
+      "draft": false,
+      "prerelease": true,
+      "assets": [
+        {
+          "name": "PhoneForm-AI-PC-0.2.0-dev.msi",
+          "bytes": 160411871,
+          "sha256": "95a827947aa34afe1a1587f62656e41631fe901340861d0ba3ce4b0a5aa0c240",
+          "uploader": "Nickwong-kyoaka",
+          "url": "https://github.com/Nickwong-kyoaka/Phone_Form_PC/releases/download/v0.2.0-dev/PhoneForm-AI-PC-0.2.0-dev.msi",
+          "assetId": 662136155,
+          "githubDigest": "sha256:95a827947aa34afe1a1587f62656e41631fe901340861d0ba3ce4b0a5aa0c240"
+        },
+        {
+          "name": "PhoneForm-AI-PC-0.2.0-dev.msi.sha256",
+          "bytes": 97,
+          "sha256": "634e8c387f8803e8b14546e0ab1930d3f1fb7763018acb0815440a96e40052d3",
+          "uploader": "Nickwong-kyoaka",
+          "url": "https://github.com/Nickwong-kyoaka/Phone_Form_PC/releases/download/v0.2.0-dev/PhoneForm-AI-PC-0.2.0-dev.msi.sha256",
+          "assetId": 662137190,
+          "githubDigest": "sha256:634e8c387f8803e8b14546e0ab1930d3f1fb7763018acb0815440a96e40052d3"
+        }
+      ],
+      "publicWithoutAuthentication": true
+    }
+  ],
+  "publicVerification": "PASS: unauthenticated release, author/uploader, tag object, sizes and GitHub SHA256 digests"
+}

@@ -77,4 +77,5 @@ Full manual journeys in all three languages, the DPI matrix, 1,000 submissions i
 - [0.2 release notes](docs/releases/0.2.0-dev.md) / [0.1 archive notes](docs/releases/0.1.0-dev.md)
 - [Build summary](output/validation/build-summary.json) / [UI checks](output/validation/uiux-0.2.0/acceptance.json)
 - [Native Excel checks](output/validation/uiux-0.2.0/excel-native.json) / [Independent XLSX checks](output/validation/uiux-0.2.0/xlsx-static.json)
+- [Verified GitHub publication](output/validation/github-publication.json)
 - [Third-party inventory](runtime/THIRD_PARTY_NOTICES.txt); component licenses/manifests are retained under `runtime/`. Source provenance is recorded in each applicable module.
