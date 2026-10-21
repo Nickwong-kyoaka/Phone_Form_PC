@@ -1,0 +1,119 @@
+{
+  "date": "2026-10-21",
+  "timezone": "Asia/Hong_Kong",
+  "verifiedAtUtc": "2026-10-21T08:26:39.584Z",
+  "application": "Microsoft Excel desktop",
+  "method": "Computer Use with screenshots and UI Automation; viewed and navigated without saving",
+  "result": "PASS",
+  "repairPromptsObserved": 0,
+  "workbooks": [
+    {
+      "file": "workflow-30-ENGLISH.xlsx",
+      "openedWithoutRepair": true,
+      "sheets": [
+        "Responses",
+        "Codebook",
+        "Review_Flags",
+        "Summary"
+      ],
+      "observations": [
+        "Responses headers and CONFIRMED/COMPLETE records visible",
+        "Summary included=30, excluded=0; identifiers=false"
+      ],
+      "bytes": 11231,
+      "sha256": "2ac6092024c86da0af56a033404a35a61d06c045cd607ede7a910dfe495c2e05"
+    },
+    {
+      "file": "workflow-1000-TRADITIONAL.xlsx",
+      "openedWithoutRepair": true,
+      "sheets": [
+        "Responses",
+        "Codebook",
+        "Review_Flags",
+        "Summary"
+      ],
+      "observations": [
+        "Traditional headers visible; Excel Ready",
+        "Summary included=1000, excluded=0; identifiers=false"
+      ],
+      "bytes": 188917,
+      "sha256": "52997ba7ce9100cf982e373b5c26f8a1b378b8359646022f4bfb65dcba3bb618"
+    },
+    {
+      "file": "workflow-1000-SIMPLIFIED.xlsx",
+      "openedWithoutRepair": true,
+      "sheets": [
+        "Responses",
+        "Codebook",
+        "Review_Flags",
+        "Summary"
+      ],
+      "observations": [
+        "Simplified headers visible; Excel Ready",
+        "Summary included=1000, excluded=0; identifiers=false"
+      ],
+      "bytes": 188923,
+      "sha256": "19fcb3496540dd951e9cba5acb22d960a611856c32b4aab5853cccf25e28d9a2"
+    },
+    {
+      "file": "workflow-1000-ENGLISH.xlsx",
+      "openedWithoutRepair": true,
+      "sheets": [
+        "Responses",
+        "Codebook",
+        "Review_Flags",
+        "Summary"
+      ],
+      "observations": [
+        "English headers visible; Excel Ready",
+        "Summary included=1000, excluded=0; identifiers=false",
+        "Native Responses!G2 displays 00001",
+        "Native Responses!O2 displays literal =1+1, not evaluated result 2"
+      ],
+      "bytes": 188695,
+      "sha256": "c61c2696aff6bfb23d9987d7193f5b0205f6a026d9c26058cb567b572fc51deb"
+    },
+    {
+      "file": "workflow-30-TRADITIONAL.xlsx",
+      "openedWithoutRepair": true,
+      "sheets": [
+        "Responses",
+        "Codebook",
+        "Review_Flags",
+        "Summary"
+      ],
+      "observations": [
+        "Traditional headers visible; Excel Ready",
+        "Summary included=30, excluded=0; identifiers=false"
+      ],
+      "bytes": 11443,
+      "sha256": "f5f1b3668cc96a7d27c3684289afb9d2affff2248f771225a41492e46264dfa7"
+    },
+    {
+      "file": "workflow-30-SIMPLIFIED.xlsx",
+      "openedWithoutRepair": true,
+      "sheets": [
+        "Responses",
+        "Codebook",
+        "Review_Flags",
+        "Summary"
+      ],
+      "observations": [
+        "Simplified headers visible; Excel Ready",
+        "Summary included=30, excluded=0; identifiers=false"
+      ],
+      "bytes": 11448,
+      "sha256": "b0c5ae6547f05566a1a06d9016f1d76e98205d1410b097752ba2e3fe02c2e6ea"
+    }
+  ],
+  "excelProductVersion": "16.0.20430.20182",
+  "originalWorkbookHashesUnchanged": true,
+  "independentOoxmlChecks": [
+    "All six ZIP CRCs and XML parse",
+    "Internal relationship targets and cell/style references",
+    "Responses unique record counts 30/1000",
+    "Cross-language answer parity",
+    "Inline text G2=00001 and O2==1+1; no formula nodes",
+    "Flags reference response records; Summary included/excluded agree"
+  ]
+}

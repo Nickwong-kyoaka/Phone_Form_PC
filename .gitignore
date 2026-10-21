@@ -1,0 +1,32 @@
+.gradle/
+.kotlin/
+**/build/
+.local/
+*.log
+runtime/models/*.traineddata
+runtime/native/*
+!runtime/native/.gitkeep
+runtime/opencv/*.dll
+runtime/opencv/*.jar
+
+# Installers are uploaded as GitHub Release assets.
+output/*.msi
+
+# Local credentials and user databases must never enter source control.
+.env
+.env.*
+*.pem
+*.pfx
+*.p12
+*.key
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+*.sqlite3
+
+# These old 30-record workbooks were overwritten by a later run; preserve
+# their historical evidence JSON, and use the versioned 0.2.0 copies instead.
+output/validation/workflow-30-*.xlsx
