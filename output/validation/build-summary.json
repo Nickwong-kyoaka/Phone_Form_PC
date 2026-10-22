@@ -421,5 +421,7 @@
   "baselineSummary": "output/validation/build-summary-0.2.0.json",
   "scale": "output/validation/0.3.0-scale.json",
   "scaleAnswerAudit": "output/validation/0.3.0-scale-workbooks.json",
-  "cleanup": "output/validation/0.3.0-cleanup.json"
+  "cleanup": "output/validation/0.3.0-cleanup.json",
+  "sourceCommit": "1d086b7a864d448d59783db0f77fe68ef30ef79a",
+  "githubVerification": "output/validation/0.3.0-github.json"
 }
