@@ -21,5 +21,6 @@
   "interruptedByUser": true,
   "nativeExcelOpened": false,
   "questionnaireScreenshotsCommitted": false,
-  "automatedSeparateEvidence": "output/validation/0.3.2-regression.json"
+  "automatedSeparateEvidence": "output/validation/0.3.2-regression.json",
+  "temporaryAnonymousWorkspaceRemoved": true
 }

@@ -135,6 +135,7 @@ Historical scale tests reused synthetic images and do not establish real-scan th
 - [规划 / Product and architecture plan](规划.md)
 - [0.3.2 current delivery / 最新交付](docs/releases/0.3.2-dev.md) / [0.3.1 archive / 前版交付](docs/releases/0.3.1-dev.md) / [0.3.0 earlier delivery](docs/releases/0.3.0-dev.md) / [0.2 release notes](docs/releases/0.2.0-dev.md) / [0.1 archive notes](docs/releases/0.1.0-dev.md)
 - [0.3.2 regression](output/validation/0.3.2-regression.json) / [0.3.2 package checks](output/validation/0.3.2-package.json) / [Build summary](output/validation/build-summary.json)
+- [0.3.2 source delivery](output/validation/0.3.2-github.json): `f409289`, author/committer Nickwong-kyoaka; original Releases/assets/tags preserved, private questionnaire derivatives excluded.
 - [0.3.2 original-input answer measurement](output/validation/0.3.2-input-accuracy.json) / [Recognition and native-process diagnostics](output/validation/0.3.2-recognition-diagnostics.json)
 - [0.3.1 regression](output/validation/0.3.1-regression.json) / [SQL read workload](output/validation/0.3.1-query-1000.json) / [Package checks](output/validation/0.3.1-package.json)
 - [0.3.1 GitHub source/identity verification and preserved Releases](output/validation/0.3.1-github.json)

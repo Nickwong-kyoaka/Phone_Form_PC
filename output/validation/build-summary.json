@@ -557,5 +557,15 @@
     "Distinct multi-page image/OCR throughput and memory",
     "Real-scan generalization"
   ],
-  "sourcePublication": "PENDING"
+  "sourcePublication": {
+    "status": "VERIFIED",
+    "sourceCommit": "f409289677950db8a327eede93c4fbe40db8ee6a",
+    "author": "Nickwong-kyoaka",
+    "committer": "Nickwong-kyoaka",
+    "evidence": "output/validation/0.3.2-github.json",
+    "newReleases": 0,
+    "originalReleasesAndAssetsUnchanged": true,
+    "privateFilesPublished": false,
+    "scope": "Source commit verified on main before this documentation-only follow-up"
+  }
 }
