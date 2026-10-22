@@ -139,6 +139,8 @@ class DesktopRepositories(val workspace: SecureWorkspace) {
     suspend fun discardEditorSession(id: String) = editors.delete(id)
     suspend fun storageUsage() = maintenance.storageUsage()
     suspend fun taskSummaries(limit: Int = 200): BackgroundTaskPage = read { ListQueries.tasks(this,limit) }
+    suspend fun queryTaskPage(query: TaskPageQuery): TaskQueryPage = read { ListQueries.taskPage(this,query) }
+    suspend fun getTaskSummary(id: String, phase: BackgroundTaskPhase): BackgroundTaskSummary? = read { ListQueries.taskSummary(this,id,phase) }
     suspend fun deleteProjects(ids: Set<String>, operationId: String): List<ProjectDeletionStatus> {
         require(operationId.isNotBlank())
         write {

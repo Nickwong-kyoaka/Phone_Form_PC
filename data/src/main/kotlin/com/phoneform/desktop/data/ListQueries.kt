@@ -159,7 +159,8 @@ internal object ListQueries {
     private val taskSql="""WITH tasks AS (
         SELECT j.id,j.project_id,'PREPARATION' phase,json_extract(j.payload,'$.status') status,
             CAST(json_extract(s.payload,'$.number') AS INTEGER) submission_number,NULL page_number,
-            json_extract(j.payload,'$.error') error,CAST(json_extract(j.payload,'$.createdAtEpochMillis') AS INTEGER) created_at
+            json_extract(j.payload,'$.error') error,CAST(json_extract(j.payload,'$.createdAtEpochMillis') AS INTEGER) created_at,s.id submission_id,
+            NULL collection_draft_id,NULL page_id
         FROM pc_records j
         JOIN pc_records h ON h.kind='preparation_head' AND h.id=json_extract(j.payload,'$.submissionRevisionId') AND json_extract(h.payload,'$.id')=j.id
         JOIN pc_records s ON s.kind='submission' AND s.id=json_extract(j.payload,'$.submissionId') AND s.project_id=j.project_id
@@ -170,7 +171,7 @@ internal object ListQueries {
             AND json_extract(j.payload,'$.status')!='SUPERSEDED' AND NOT EXISTS(SELECT 1 FROM pc_records d WHERE d.kind='deletion' AND d.id=j.project_id)
         UNION ALL
         SELECT j.id,j.project_id,'RECOGNITION',json_extract(j.payload,'$.status'),CAST(json_extract(s.payload,'$.number') AS INTEGER),NULL,
-            json_extract(j.payload,'$.error'),CAST(json_extract(j.payload,'$.createdAtEpochMillis') AS INTEGER)
+            json_extract(j.payload,'$.error'),CAST(json_extract(j.payload,'$.createdAtEpochMillis') AS INTEGER),s.id,NULL,NULL
         FROM pc_records j
         JOIN pc_records h ON h.kind='recognition_head' AND h.id=json_extract(j.payload,'$.submissionRevisionId') AND json_extract(h.payload,'$.id')=j.id
         JOIN pc_records s ON s.kind='submission' AND s.id=json_extract(j.payload,'$.submissionId') AND s.project_id=j.project_id
@@ -183,7 +184,9 @@ internal object ListQueries {
         SELECT j.id,j.project_id,'IMAGE',json_extract(j.payload,'$.status'),
             CASE WHEN json_extract(j.payload,'$.owner.kind')='SUBMISSION_REVISION' THEN CAST(json_extract(s.payload,'$.number') AS INTEGER) ELSE NULL END,
             CASE WHEN json_extract(j.payload,'$.owner.kind')='TEMPLATE_DRAFT' THEN CAST(json_extract(j.payload,'$.page.position') AS INTEGER)+1 ELSE NULL END,
-            json_extract(j.payload,'$.error'),CAST(json_extract(j.payload,'$.createdAtEpochMillis') AS INTEGER)
+            json_extract(j.payload,'$.error'),CAST(json_extract(j.payload,'$.createdAtEpochMillis') AS INTEGER),s.id,
+            CASE WHEN json_extract(j.payload,'$.owner.kind')='SUBMISSION_DRAFT' THEN owner.id ELSE NULL END,
+            CASE WHEN json_extract(j.payload,'$.owner.kind')='SUBMISSION_DRAFT' THEN json_extract(j.payload,'$.page.id') ELSE NULL END
         FROM pc_records j
         JOIN pc_records h ON h.kind='image_job_head' AND h.id=json_extract(j.payload,'$.owner.kind')||':'||json_extract(j.payload,'$.owner.id')||':'||json_extract(j.payload,'$.owner.revision')||':'||json_extract(j.payload,'$.page.id')||':'||json_extract(j.payload,'$.inputFingerprint') AND json_extract(h.payload,'$.id')=j.id
         JOIN pc_records p ON p.kind='project' AND p.id=j.project_id
@@ -197,15 +200,52 @@ internal object ListQueries {
                 WHEN 'SUBMISSION_REVISION' THEN json_extract(owner.payload,'$.number')=json_extract(j.payload,'$.owner.revision') AND json_extract(s.payload,'$.currentRevisionId')=owner.id AND EXISTS(SELECT 1 FROM json_each(owner.payload,'$.pages') page WHERE json_extract(page.value,'$.image.id')=json_extract(j.payload,'$.page.id'))
                 ELSE 0 END
     ) """
-    fun tasks(records: Records, limit: Int): BackgroundTaskPage {
-        require(limit in 1..200) { "TASK_PAGE_INVALID" }
-        val counts=records.connection.prepareStatement(taskSql+"SELECT status,count(*) FROM tasks GROUP BY status ORDER BY status").use {
+    private val taskRowsSql=taskSql+""",task_rows AS (
+        SELECT tasks.*,coalesce(json_extract(p.payload,'$.project.name'),'') project_name
+        FROM tasks JOIN pc_records p ON p.kind='project' AND p.id=tasks.project_id
+    ) """
+    private const val taskOrder="CASE status WHEN 'RUNNING' THEN 0 WHEN 'FAILED' THEN 1 WHEN 'BLOCKED' THEN 2 WHEN 'PAUSED' THEN 3 WHEN 'QUEUED' THEN 4 ELSE 5 END,created_at DESC,phase,id"
+    private fun ResultSet.taskSummary() = BackgroundTaskSummary(getString("id"),getString("project_id"),
+        BackgroundTaskPhase.valueOf(getString("phase")),getString("status"),
+        (getObject("submission_number") as? Number)?.toInt(),(getObject("page_number") as? Number)?.toInt(),
+        getString("error"),getString("status") in setOf("FAILED","PAUSED"),getLong("created_at"),getString("project_name"),getString("submission_id"),
+        getString("collection_draft_id"),getString("page_id"))
+    private fun taskCounts(records: Records): Map<String,Int> = records.connection.prepareStatement(taskSql+"SELECT status,count(*) FROM tasks GROUP BY status ORDER BY status").use {
             it.executeQuery().use { rows -> buildMap { while(rows.next()) put(rows.getString(1),rows.getInt(2)) } }
         }
-        val items=records.connection.prepareStatement(taskSql+"""SELECT * FROM tasks ORDER BY CASE status WHEN 'RUNNING' THEN 0 WHEN 'FAILED' THEN 1 WHEN 'BLOCKED' THEN 2 WHEN 'PAUSED' THEN 3 WHEN 'QUEUED' THEN 4 ELSE 5 END,created_at DESC,phase,id LIMIT ?""").use {
-            it.setInt(1,limit);it.executeQuery().use { rows -> buildList { while(rows.next()) add(BackgroundTaskSummary(rows.getString("id"),rows.getString("project_id"),BackgroundTaskPhase.valueOf(rows.getString("phase")),rows.getString("status"),
-                (rows.getObject("submission_number") as? Number)?.toInt(),(rows.getObject("page_number") as? Number)?.toInt(),rows.getString("error"),rows.getString("status") in setOf("FAILED","PAUSED"),rows.getLong("created_at"))) } }
+    private fun matchedTask(query: TaskPageQuery): String = """(pc_contains(project_name,?)=1 OR pc_contains(CAST(submission_number AS TEXT),?)=1) AND ${when(query.filter) {
+        TaskListFilter.PENDING -> "status IN('QUEUED','RUNNING','PAUSED','BLOCKED')"
+        TaskListFilter.FAILED -> "status='FAILED'"
+        TaskListFilter.COMPLETED -> "status='READY'"
+        TaskListFilter.ALL -> "1=1"
+    }}"""
+    private fun PreparedStatement.taskParameters(query: TaskPageQuery) {
+        setString(1,query.search);setString(2,query.search)
+    }
+    fun tasks(records: Records, limit: Int): BackgroundTaskPage {
+        require(limit in 1..200) { "TASK_PAGE_INVALID" }
+        val counts=taskCounts(records)
+        val items=records.connection.prepareStatement(taskRowsSql+"SELECT * FROM task_rows ORDER BY $taskOrder LIMIT ?").use {
+            it.setInt(1,limit);it.executeQuery().use { rows -> buildList { while(rows.next()) add(rows.taskSummary()) } }
         }
         return BackgroundTaskPage(items,counts.values.sum(),counts)
     }
+    fun taskPage(records: Records, raw: TaskPageQuery): TaskQueryPage {
+        val query=raw.normalized()
+        // Validate/count every current row before a search or LIMIT can hide an unsupported record.
+        val counts=taskCounts(records)
+        val totalMatched=records.connection.prepareStatement(taskRowsSql+"SELECT count(*) FROM task_rows WHERE ${matchedTask(query)}").use {
+            it.taskParameters(query);it.executeQuery().use { row -> row.next();row.getInt(1) }
+        }
+        val effective=query.copy(pageIndex=query.pageIndex.coerceAtMost(if(totalMatched==0) 0 else (totalMatched-1)/query.pageSize))
+        val items=records.connection.prepareStatement(taskRowsSql+"SELECT * FROM task_rows WHERE ${matchedTask(effective)} ORDER BY $taskOrder LIMIT ? OFFSET ?").use {
+            it.taskParameters(effective);it.setInt(3,effective.pageSize);it.setInt(4,effective.pageIndex*effective.pageSize)
+            it.executeQuery().use { rows -> buildList { while(rows.next()) add(rows.taskSummary()) } }
+        }
+        return TaskQueryPage(effective,items,totalMatched,counts.values.sum(),counts)
+    }
+    fun taskSummary(records: Records, id: String, phase: BackgroundTaskPhase): BackgroundTaskSummary? =
+        records.connection.prepareStatement(taskRowsSql+"SELECT * FROM task_rows WHERE id=? AND phase=?").use {
+            it.setString(1,id);it.setString(2,phase.name);it.executeQuery().use { rows -> if(rows.next()) rows.taskSummary() else null }
+        }
 }

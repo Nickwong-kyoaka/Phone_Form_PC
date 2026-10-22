@@ -1,0 +1,835 @@
+{
+  "schemaVersion": 1,
+  "appVersion": "0.3.2-dev",
+  "checkedAtUtc": "2026-10-22T10:41:39.6069004Z",
+  "measurementStatus": "MEASURED_WITH_NATIVE_PROCESS_FAILURE",
+  "testStatus": "FAILED",
+  "engineVersion": "tesseract-5.5_opencv-4.12.0_marks-1",
+  "parametersVersion": "marks-1",
+  "parametersFingerprint": "48fd559a1b9fd3fa4298422535145286bf2dd36c90ba719bede5da4f2685fab8",
+  "productionEngineParametersChanged": false,
+  "conditions": {
+    "inputCount": 2,
+    "importPipeline": "Production encrypted PDF import, isolated PDF helper, image processing, immutable profile, durable preparation and recognition jobs",
+    "pdfRenderDpi": 144,
+    "maximumBaseImageDimension": 2560,
+    "geometry": "One frozen human-selected region/core configuration before recognition outputs; raw PDF orientation",
+    "templateAndSubmission": "The same filled PDF was independently imported for template and submission",
+    "scope": "Conditional calibration measurement; does not establish alignment generalization or performance on new scans",
+    "humanAnswersWritten": false,
+    "expectedAnswersReadByRecognition": false,
+    "nativeExcelOpened": false,
+    "diagnosticsUseExpectedAnswers": false
+  },
+  "totals": {
+    "sourcePages": 14,
+    "requestedTargets": 202,
+    "observedTargets": 202,
+    "questionCandidates": 0,
+    "candidatePrecision": "UNDEFINED_WITH_ZERO_CANDIDATES",
+    "optionObservations": 497,
+    "optionDecisionCounts": {
+      "AMBIGUOUS": 118,
+      "EMPTY": 49,
+      "SELECTED": 1,
+      "UNSUPPORTED": 329
+    },
+    "questionReasonCounts": {
+      "ALIGNMENT_FAILED:MATCHES_TOO_LOCAL": 6,
+      "BASE_ENHANCED_OCR_CONFLICT": 1,
+      "INVALID_DATE": 2,
+      "INVALID_NUMBER": 1,
+      "MANUAL_MARK_STYLE": 4,
+      "MANUAL_TEXT_REQUIRED": 45,
+      "NO_READABLE_TEXT": 6,
+      "OPTION_REQUIRES_MANUAL_REVIEW": 137
+    }
+  },
+  "documents": [
+    {
+      "documentId": "document-a",
+      "sourcePageCount": 6,
+      "requestedTargets": 118,
+      "observedTargets": 118,
+      "questionTypeCounts": {
+        "DATE": 2,
+        "MULTIPLE_CHOICE": 5,
+        "NUMBER": 5,
+        "SINGLE_CHOICE": 84,
+        "TEXT": 22
+      },
+      "reportCategoryCounts": {
+        "DATE": 2,
+        "MATRIX": 73,
+        "MULTIPLE_CHOICE": 5,
+        "NUMBER": 5,
+        "SINGLE_CHOICE": 11,
+        "TEXT": 22
+      },
+      "profileConfiguredEnabledCount": 95,
+      "jobStatus": "READY",
+      "questionCandidateCount": 0,
+      "humanAnswersPresent": false,
+      "confirmationPresent": false,
+      "questionReasonCounts": {
+        "ALIGNMENT_FAILED:MATCHES_TOO_LOCAL": 6,
+        "INVALID_NUMBER": 1,
+        "MANUAL_MARK_STYLE": 1,
+        "MANUAL_TEXT_REQUIRED": 22,
+        "NO_READABLE_TEXT": 5,
+        "OPTION_REQUIRES_MANUAL_REVIEW": 83
+      },
+      "optionObservationCount": 309,
+      "optionDecisionCounts": {
+        "AMBIGUOUS": 74,
+        "EMPTY": 30,
+        "UNSUPPORTED": 205
+      },
+      "optionStyleDecisionReasons": [
+        {
+          "style": "CHECKBOX_TICK_CROSS",
+          "decision": "UNSUPPORTED",
+          "reason": "CHECKBOX_BORDER_NOT_LOCALIZED",
+          "count": 38
+        },
+        {
+          "style": "CIRCLED_PRINTED_NUMBER",
+          "decision": "AMBIGUOUS",
+          "reason": "CIRCLE_OR_INK_CROPPED",
+          "count": 66
+        },
+        {
+          "style": "CIRCLED_PRINTED_NUMBER",
+          "decision": "AMBIGUOUS",
+          "reason": "ISOLATED_OUTER_INK",
+          "count": 4
+        },
+        {
+          "style": "CIRCLED_PRINTED_NUMBER",
+          "decision": "AMBIGUOUS",
+          "reason": "NO_RELIABLE_SURROUNDING_CURVE",
+          "count": 4
+        },
+        {
+          "style": "CIRCLED_PRINTED_NUMBER",
+          "decision": "EMPTY",
+          "reason": "NO_SURROUNDING_CIRCLE",
+          "count": 30
+        },
+        {
+          "style": "CIRCLED_PRINTED_NUMBER",
+          "decision": "UNSUPPORTED",
+          "reason": "OPTION_TOO_BLURRED",
+          "count": 51
+        },
+        {
+          "style": "CIRCLED_PRINTED_NUMBER",
+          "decision": "UNSUPPORTED",
+          "reason": "PRINTED_CORE_UNRELIABLE",
+          "count": 116
+        }
+      ],
+      "optionMetricRanges": [
+        {
+          "reason": "CHECKBOX_BORDER_NOT_LOCALIZED",
+          "count": 38,
+          "metrics": {
+            "cropWidth": {
+              "minimum": 27.0,
+              "maximum": 28.0
+            },
+            "cropHeight": {
+              "minimum": 27.0,
+              "maximum": 28.0
+            },
+            "softInkFraction": {
+              "minimum": 0.061068702290076333,
+              "maximum": 0.5283018867924528
+            },
+            "borderCoverage": {
+              "minimum": 0.0,
+              "maximum": 1.0
+            },
+            "boxWidth": {
+              "minimum": 10.0,
+              "maximum": 12.0
+            },
+            "boxHeight": {
+              "minimum": 7.0,
+              "maximum": 15.0
+            }
+          }
+        },
+        {
+          "reason": "CIRCLE_OR_INK_CROPPED",
+          "count": 66,
+          "metrics": {
+            "cropWidth": {
+              "minimum": 62.0,
+              "maximum": 95.0
+            },
+            "cropHeight": {
+              "minimum": 35.0,
+              "maximum": 77.0
+            },
+            "softInkFraction": {
+              "minimum": 0.06865671641791045,
+              "maximum": 0.5480225988700564
+            },
+            "coreInkFraction": {
+              "minimum": 0.08214285714285714,
+              "maximum": 0.2932330827067669
+            },
+            "coreEdgeInk": {
+              "minimum": 0.0,
+              "maximum": 2.0
+            }
+          }
+        },
+        {
+          "reason": "ISOLATED_OUTER_INK",
+          "count": 4,
+          "metrics": {
+            "cropWidth": {
+              "minimum": 64.0,
+              "maximum": 79.0
+            },
+            "cropHeight": {
+              "minimum": 35.0,
+              "maximum": 36.0
+            },
+            "softInkFraction": {
+              "minimum": 0.16666666666666666,
+              "maximum": 0.5103448275862069
+            },
+            "coreInkFraction": {
+              "minimum": 0.16666666666666666,
+              "maximum": 0.22456140350877193
+            },
+            "coreEdgeInk": {
+              "minimum": 0.0,
+              "maximum": 2.0
+            }
+          }
+        },
+        {
+          "reason": "NO_RELIABLE_SURROUNDING_CURVE",
+          "count": 4,
+          "metrics": {
+            "cropWidth": {
+              "minimum": 63.0,
+              "maximum": 94.0
+            },
+            "cropHeight": {
+              "minimum": 35.0,
+              "maximum": 36.0
+            },
+            "softInkFraction": {
+              "minimum": 0.07222222222222222,
+              "maximum": 0.5396825396825397
+            },
+            "coreInkFraction": {
+              "minimum": 0.10666666666666667,
+              "maximum": 0.22857142857142856
+            },
+            "coreEdgeInk": {
+              "minimum": 0.0,
+              "maximum": 2.0
+            }
+          }
+        },
+        {
+          "reason": "NO_SURROUNDING_CIRCLE",
+          "count": 30,
+          "metrics": {
+            "cropWidth": {
+              "minimum": 62.0,
+              "maximum": 95.0
+            },
+            "cropHeight": {
+              "minimum": 35.0,
+              "maximum": 36.0
+            },
+            "softInkFraction": {
+              "minimum": 0.14689265536723164,
+              "maximum": 0.549618320610687
+            },
+            "coreInkFraction": {
+              "minimum": 0.1,
+              "maximum": 0.21666666666666667
+            },
+            "coreEdgeInk": {
+              "minimum": 0.0,
+              "maximum": 2.0
+            }
+          }
+        },
+        {
+          "reason": "OPTION_TOO_BLURRED",
+          "count": 51,
+          "metrics": {
+            "cropWidth": {
+              "minimum": 62.0,
+              "maximum": 95.0
+            },
+            "cropHeight": {
+              "minimum": 35.0,
+              "maximum": 37.0
+            },
+            "softInkFraction": {
+              "minimum": 0.5504807692307693,
+              "maximum": 0.8333333333333334
+            }
+          }
+        },
+        {
+          "reason": "PRINTED_CORE_UNRELIABLE",
+          "count": 116,
+          "metrics": {
+            "cropWidth": {
+              "minimum": 63.0,
+              "maximum": 96.0
+            },
+            "cropHeight": {
+              "minimum": 35.0,
+              "maximum": 77.0
+            },
+            "softInkFraction": {
+              "minimum": 0.05555555555555555,
+              "maximum": 0.5495978552278821
+            },
+            "coreInkFraction": {
+              "minimum": 0.09642857142857143,
+              "maximum": 0.3964285714285714
+            },
+            "coreEdgeInk": {
+              "minimum": 3.0,
+              "maximum": 28.0
+            }
+          }
+        }
+      ],
+      "alignmentCounts": {
+        "ALIGNED": 5,
+        "FAILED": 1
+      },
+      "pageAlignments": [
+        {
+          "pageIndex": 0,
+          "status": "FAILED",
+          "reason": "MATCHES_TOO_LOCAL"
+        },
+        {
+          "pageIndex": 1,
+          "status": "ALIGNED",
+          "reason": ""
+        },
+        {
+          "pageIndex": 2,
+          "status": "ALIGNED",
+          "reason": ""
+        },
+        {
+          "pageIndex": 3,
+          "status": "ALIGNED",
+          "reason": ""
+        },
+        {
+          "pageIndex": 4,
+          "status": "ALIGNED",
+          "reason": ""
+        },
+        {
+          "pageIndex": 5,
+          "status": "ALIGNED",
+          "reason": ""
+        }
+      ],
+      "rawReportSha256": "a16dee96b85d995fc1d7f805d52829419c210f527ebf906921533439d445baa3",
+      "nativeTestProcess": {
+        "testStatus": "FAILED",
+        "exitCode": -1073740791,
+        "exitCodeHex": "0xC0000409",
+        "reportAndDigestWrittenBeforeExit": true,
+        "faultModule": "UNKNOWN",
+        "faultPhase": "UNKNOWN_AFTER_REPORT_WRITE"
+      }
+    },
+    {
+      "documentId": "document-b",
+      "sourcePageCount": 8,
+      "requestedTargets": 84,
+      "observedTargets": 84,
+      "questionTypeCounts": {
+        "DATE": 2,
+        "MULTIPLE_CHOICE": 4,
+        "NUMBER": 2,
+        "SINGLE_CHOICE": 53,
+        "TEXT": 23
+      },
+      "reportCategoryCounts": {
+        "DATE": 2,
+        "MATRIX": 46,
+        "MULTIPLE_CHOICE": 4,
+        "NUMBER": 2,
+        "SINGLE_CHOICE": 7,
+        "TEXT": 23
+      },
+      "profileConfiguredEnabledCount": 58,
+      "jobStatus": "READY",
+      "questionCandidateCount": 0,
+      "humanAnswersPresent": false,
+      "confirmationPresent": false,
+      "questionReasonCounts": {
+        "BASE_ENHANCED_OCR_CONFLICT": 1,
+        "INVALID_DATE": 2,
+        "MANUAL_MARK_STYLE": 3,
+        "MANUAL_TEXT_REQUIRED": 23,
+        "NO_READABLE_TEXT": 1,
+        "OPTION_REQUIRES_MANUAL_REVIEW": 54
+      },
+      "optionObservationCount": 188,
+      "optionDecisionCounts": {
+        "AMBIGUOUS": 44,
+        "EMPTY": 19,
+        "SELECTED": 1,
+        "UNSUPPORTED": 124
+      },
+      "optionStyleDecisionReasons": [
+        {
+          "style": "CHECKBOX_TICK_CROSS",
+          "decision": "AMBIGUOUS",
+          "reason": "CHECKBOX_MARK_NOT_CONFIDENT",
+          "count": 5
+        },
+        {
+          "style": "CHECKBOX_TICK_CROSS",
+          "decision": "UNSUPPORTED",
+          "reason": "CHECKBOX_BORDER_NOT_LOCALIZED",
+          "count": 27
+        },
+        {
+          "style": "CIRCLED_PRINTED_NUMBER",
+          "decision": "AMBIGUOUS",
+          "reason": "CIRCLE_OR_INK_CROPPED",
+          "count": 28
+        },
+        {
+          "style": "CIRCLED_PRINTED_NUMBER",
+          "decision": "AMBIGUOUS",
+          "reason": "ISOLATED_OUTER_INK",
+          "count": 9
+        },
+        {
+          "style": "CIRCLED_PRINTED_NUMBER",
+          "decision": "AMBIGUOUS",
+          "reason": "NO_RELIABLE_SURROUNDING_CURVE",
+          "count": 2
+        },
+        {
+          "style": "CIRCLED_PRINTED_NUMBER",
+          "decision": "EMPTY",
+          "reason": "NO_SURROUNDING_CIRCLE",
+          "count": 19
+        },
+        {
+          "style": "CIRCLED_PRINTED_NUMBER",
+          "decision": "SELECTED",
+          "reason": "CIRCLE_AROUND_PRINTED_CORE",
+          "count": 1
+        },
+        {
+          "style": "CIRCLED_PRINTED_NUMBER",
+          "decision": "UNSUPPORTED",
+          "reason": "OPTION_TOO_BLURRED",
+          "count": 2
+        },
+        {
+          "style": "CIRCLED_PRINTED_NUMBER",
+          "decision": "UNSUPPORTED",
+          "reason": "PRINTED_CORE_TOO_LARGE",
+          "count": 7
+        },
+        {
+          "style": "CIRCLED_PRINTED_NUMBER",
+          "decision": "UNSUPPORTED",
+          "reason": "PRINTED_CORE_UNRELIABLE",
+          "count": 88
+        }
+      ],
+      "optionMetricRanges": [
+        {
+          "reason": "CHECKBOX_BORDER_NOT_LOCALIZED",
+          "count": 27,
+          "metrics": {
+            "cropWidth": {
+              "minimum": 60.0,
+              "maximum": 89.0
+            },
+            "cropHeight": {
+              "minimum": 49.0,
+              "maximum": 76.0
+            },
+            "softInkFraction": {
+              "minimum": 0.19642857142857142,
+              "maximum": 0.3525641025641026
+            },
+            "borderCoverage": {
+              "minimum": 0.0,
+              "maximum": 0.5833333333333334
+            },
+            "boxWidth": {
+              "minimum": 17.0,
+              "maximum": 39.0
+            },
+            "boxHeight": {
+              "minimum": 17.0,
+              "maximum": 66.0
+            }
+          }
+        },
+        {
+          "reason": "CHECKBOX_MARK_NOT_CONFIDENT",
+          "count": 5,
+          "metrics": {
+            "cropWidth": {
+              "minimum": 60.0,
+              "maximum": 68.0
+            },
+            "cropHeight": {
+              "minimum": 65.0,
+              "maximum": 70.0
+            },
+            "softInkFraction": {
+              "minimum": 0.23976608187134502,
+              "maximum": 0.3476923076923077
+            },
+            "borderCoverage": {
+              "minimum": 0.7894736842105263,
+              "maximum": 0.8421052631578947
+            },
+            "boxWidth": {
+              "minimum": 17.0,
+              "maximum": 19.0
+            },
+            "boxHeight": {
+              "minimum": 18.0,
+              "maximum": 19.0
+            }
+          }
+        },
+        {
+          "reason": "CIRCLE_AROUND_PRINTED_CORE",
+          "count": 1,
+          "metrics": {
+            "cropWidth": {
+              "minimum": 60.0,
+              "maximum": 60.0
+            },
+            "cropHeight": {
+              "minimum": 93.0,
+              "maximum": 93.0
+            },
+            "softInkFraction": {
+              "minimum": 0.2982456140350877,
+              "maximum": 0.2982456140350877
+            },
+            "coreInkFraction": {
+              "minimum": 0.3159420289855073,
+              "maximum": 0.3159420289855073
+            },
+            "coreEdgeInk": {
+              "minimum": 2.0,
+              "maximum": 2.0
+            }
+          }
+        },
+        {
+          "reason": "CIRCLE_OR_INK_CROPPED",
+          "count": 28,
+          "metrics": {
+            "cropWidth": {
+              "minimum": 48.0,
+              "maximum": 77.0
+            },
+            "cropHeight": {
+              "minimum": 43.0,
+              "maximum": 121.0
+            },
+            "softInkFraction": {
+              "minimum": 0.19574468085106383,
+              "maximum": 0.518918918918919
+            },
+            "coreInkFraction": {
+              "minimum": 0.16507936507936508,
+              "maximum": 0.3217391304347826
+            },
+            "coreEdgeInk": {
+              "minimum": 0.0,
+              "maximum": 2.0
+            }
+          }
+        },
+        {
+          "reason": "ISOLATED_OUTER_INK",
+          "count": 9,
+          "metrics": {
+            "cropWidth": {
+              "minimum": 70.0,
+              "maximum": 77.0
+            },
+            "cropHeight": {
+              "minimum": 43.0,
+              "maximum": 121.0
+            },
+            "softInkFraction": {
+              "minimum": 0.24701195219123506,
+              "maximum": 0.45161290322580644
+            },
+            "coreInkFraction": {
+              "minimum": 0.16825396825396827,
+              "maximum": 0.36666666666666664
+            },
+            "coreEdgeInk": {
+              "minimum": 0.0,
+              "maximum": 1.0
+            }
+          }
+        },
+        {
+          "reason": "NO_RELIABLE_SURROUNDING_CURVE",
+          "count": 2,
+          "metrics": {
+            "cropWidth": {
+              "minimum": 77.0,
+              "maximum": 77.0
+            },
+            "cropHeight": {
+              "minimum": 43.0,
+              "maximum": 45.0
+            },
+            "softInkFraction": {
+              "minimum": 0.19047619047619047,
+              "maximum": 0.28699551569506726
+            },
+            "coreInkFraction": {
+              "minimum": 0.17142857142857143,
+              "maximum": 0.19682539682539682
+            },
+            "coreEdgeInk": {
+              "minimum": 0.0,
+              "maximum": 2.0
+            }
+          }
+        },
+        {
+          "reason": "NO_SURROUNDING_CIRCLE",
+          "count": 19,
+          "metrics": {
+            "cropWidth": {
+              "minimum": 71.0,
+              "maximum": 77.0
+            },
+            "cropHeight": {
+              "minimum": 42.0,
+              "maximum": 121.0
+            },
+            "softInkFraction": {
+              "minimum": 0.061946902654867256,
+              "maximum": 0.45454545454545453
+            },
+            "coreInkFraction": {
+              "minimum": 0.1746031746031746,
+              "maximum": 0.336231884057971
+            },
+            "coreEdgeInk": {
+              "minimum": 0.0,
+              "maximum": 0.0
+            }
+          }
+        },
+        {
+          "reason": "OPTION_TOO_BLURRED",
+          "count": 2,
+          "metrics": {
+            "cropWidth": {
+              "minimum": 77.0,
+              "maximum": 77.0
+            },
+            "cropHeight": {
+              "minimum": 43.0,
+              "maximum": 44.0
+            },
+            "softInkFraction": {
+              "minimum": 0.5856164383561644,
+              "maximum": 0.6036036036036037
+            }
+          }
+        },
+        {
+          "reason": "PRINTED_CORE_TOO_LARGE",
+          "count": 7,
+          "metrics": {
+            "cropWidth": {
+              "minimum": 77.0,
+              "maximum": 77.0
+            },
+            "cropHeight": {
+              "minimum": 26.0,
+              "maximum": 29.0
+            },
+            "softInkFraction": {
+              "minimum": 0.09649122807017543,
+              "maximum": 0.5213414634146342
+            },
+            "coreInkFraction": {
+              "minimum": 0.1696969696969697,
+              "maximum": 0.3047619047619048
+            },
+            "coreEdgeInk": {
+              "minimum": 0.0,
+              "maximum": 2.0
+            }
+          }
+        },
+        {
+          "reason": "PRINTED_CORE_UNRELIABLE",
+          "count": 88,
+          "metrics": {
+            "cropWidth": {
+              "minimum": 45.0,
+              "maximum": 77.0
+            },
+            "cropHeight": {
+              "minimum": 26.0,
+              "maximum": 121.0
+            },
+            "softInkFraction": {
+              "minimum": 0.07142857142857142,
+              "maximum": 0.5142857142857142
+            },
+            "coreInkFraction": {
+              "minimum": 0.1492063492063492,
+              "maximum": 0.5066666666666667
+            },
+            "coreEdgeInk": {
+              "minimum": 3.0,
+              "maximum": 23.0
+            }
+          }
+        }
+      ],
+      "alignmentCounts": {
+        "ALIGNED": 7,
+        "NOT_REQUIRED": 1
+      },
+      "pageAlignments": [
+        {
+          "pageIndex": 0,
+          "status": "NOT_REQUIRED",
+          "reason": "MANUAL_ONLY"
+        },
+        {
+          "pageIndex": 1,
+          "status": "ALIGNED",
+          "reason": ""
+        },
+        {
+          "pageIndex": 2,
+          "status": "ALIGNED",
+          "reason": ""
+        },
+        {
+          "pageIndex": 3,
+          "status": "ALIGNED",
+          "reason": ""
+        },
+        {
+          "pageIndex": 4,
+          "status": "ALIGNED",
+          "reason": ""
+        },
+        {
+          "pageIndex": 5,
+          "status": "ALIGNED",
+          "reason": ""
+        },
+        {
+          "pageIndex": 6,
+          "status": "ALIGNED",
+          "reason": ""
+        },
+        {
+          "pageIndex": 7,
+          "status": "ALIGNED",
+          "reason": ""
+        }
+      ],
+      "rawReportSha256": "4048fa3775022f22ced7c21397b12e1d24bd99fc07ae4c44aaa357986215986f",
+      "nativeTestProcess": {
+        "testStatus": "FAILED",
+        "exitCode": -1073740791,
+        "exitCodeHex": "0xC0000409",
+        "reportAndDigestWrittenBeforeExit": true,
+        "faultModule": "UNKNOWN",
+        "faultPhase": "UNKNOWN_AFTER_REPORT_WRITE"
+      }
+    }
+  ],
+  "primaryIssues": [
+    {
+      "code": "QUESTION_LEVEL_ABSTENTION",
+      "evidence": "No complete question candidate was produced. One option was classified SELECTED in the second document, but other uncertain options prevented a question candidate.",
+      "interpretation": "An option decision is not a correctly answered question; accuracy requires independent truth comparison."
+    },
+    {
+      "code": "SMALL_FITTED_CHECKBOX",
+      "evidence": "All 38 checkbox option crops in the first document were 27-28 pixels per side; fitted printed-box widths were 10-12 pixels, below the production 14-pixel minimum.",
+      "interpretation": "Outer ROI size passed the 20-pixel guard. This is fitted-border scale/localization failure, not missing manual regions."
+    },
+    {
+      "code": "PRINTED_CORE_EDGE_INK",
+      "evidence": "116 first-document and 88 second-document circle options reported PRINTED_CORE_UNRELIABLE. First-document cores had at least 27 ink pixels, with edge ink 3-28 pixels in cores approximately 14-15 by 19-21 pixels.",
+      "interpretation": "These first-document rejections are caused by ink touching the printed-core boundary, not empty or unconfirmed cores."
+    },
+    {
+      "code": "REAL_SCAN_OPTION_GUARDS",
+      "evidence": "Across both inputs, OPTION_TOO_BLURRED occurred 53 times and CIRCLE_OR_INK_CROPPED 94 times; the second input also had 7 PRINTED_CORE_TOO_LARGE decisions.",
+      "interpretation": "Frozen grayscale, boundary and core-geometry guards withheld candidates. Measurements are diagnostic values, not accuracy."
+    },
+    {
+      "code": "ALIGNMENT_LIMIT",
+      "evidence": "First input: five pages ALIGNED and one FAILED with MATCHES_TOO_LOCAL. Second input: seven ALIGNED and one NOT_REQUIRED because all targets on that page were manual.",
+      "interpretation": "Even the same-source calibration run did not pass every automatic alignment gate."
+    },
+    {
+      "code": "SCALAR_AND_MANUAL_LIMITS",
+      "evidence": "Scalar observations included six NO_READABLE_TEXT, one INVALID_NUMBER, two INVALID_DATE and one BASE_ENHANCED_OCR_CONFLICT. Forty-five text targets and four manually configured choice targets required human input.",
+      "interpretation": "Manual fields are intentional abstentions, and no human values were credited as machine output."
+    },
+    {
+      "code": "NATIVE_PROCESS_LIFECYCLE_FAILURE",
+      "evidence": "Both recognition jobs reached READY and wrote raw-report digests, followed by the same failing native test-process exit.",
+      "interpretation": "The saved candidate measurement exists, but the end-to-end native process test did not pass. The responsible native module and fault phase are unverified."
+    },
+    {
+      "code": "CHINESE_VERTICAL_MODEL_DEPENDENCY",
+      "evidence": "The bundled Chinese traineddata configurations request corresponding vertical sublanguages that are absent from the current bundled model inventory; the Chinese run emitted a missing-sublanguage warning.",
+      "interpretation": "The startup availability check covers the primary three model files only. The warning alone does not establish total OCR failure or the native crash cause."
+    }
+  ],
+  "nativeCrashInvestigation": {
+    "jvmFatalLogsFoundInInspectedWorkspaceLocations": false,
+    "matchingApplicationCrashEventsReturned": false,
+    "windowsCrashDumpInspection": "ACCESS_DENIED",
+    "causeEstablished": false
+  },
+  "privacy": {
+    "containsSourceFilenames": false,
+    "containsPrivatePaths": false,
+    "containsQuestionText": false,
+    "containsAnswers": false,
+    "containsPerTargetIds": false,
+    "rawPredictionsAndTruthRetainedInIgnoredLocalStorageOnly": true
+  }
+}

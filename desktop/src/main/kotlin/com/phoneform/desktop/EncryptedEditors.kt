@@ -19,26 +19,33 @@ val editorJson = Gson()
 internal enum class RecoveryLoadStatus { LOADING, READY, FAILED }
 
 /** No edit/commit can race the encrypted recovery read. Failed decoding retains its source. */
-internal class RecoverableEditorState<T : Any>(initial:T, private val decode:(String)->T,
+internal class RecoverableEditorState<T : Any>(private val initial:T, private val decode:(String)->T,
     private val encode:(T)->String, private val read:suspend ()->String?, private val write:(String)->Unit) : MutableState<T> {
     private val backing=mutableStateOf(initial)
     var status by mutableStateOf(RecoveryLoadStatus.LOADING); private set
     var retainedRaw by mutableStateOf<String?>(null); private set
     var attempt by mutableIntStateOf(0); private set
+    private val loadGeneration=java.util.concurrent.atomic.AtomicLong()
     val ready get()=status==RecoveryLoadStatus.READY
     fun requireReady() { check(ready){"EDITOR_RECOVERY_PENDING"} }
-    fun retry() { if(status==RecoveryLoadStatus.FAILED){status=RecoveryLoadStatus.LOADING;attempt++} }
+    fun retry() { if(status==RecoveryLoadStatus.FAILED){loadGeneration.incrementAndGet();status=RecoveryLoadStatus.LOADING;attempt++} }
     suspend fun restore() {
+        val generation=loadGeneration.incrementAndGet()
         status=RecoveryLoadStatus.LOADING
         try {
-            val raw=read();retainedRaw=raw
-            if(raw!=null)backing.value=requireNotNull(decode(raw)){"EDITOR_RECOVERY_CORRUPT"}
+            val raw=read()
+            if(loadGeneration.get()!=generation)return
+            retainedRaw=raw
+            val restored=raw?.let {requireNotNull(decode(it)){"EDITOR_RECOVERY_CORRUPT"}}
+            if(loadGeneration.get()!=generation)return
+            if(restored!=null)backing.value=restored
             status=RecoveryLoadStatus.READY
         } catch(failure:CancellationException){throw failure}
-        catch(_:Exception){status=RecoveryLoadStatus.FAILED}
+        catch(_:Exception){if(loadGeneration.get()==generation)status=RecoveryLoadStatus.FAILED}
     }
     /** Called only after an explicit discard successfully removes the encrypted source. */
-    fun resetAfterDiscard(initial:T) { backing.value=initial;retainedRaw=null;status=RecoveryLoadStatus.READY }
+    fun resetAfterDiscard(initial:T) { loadGeneration.incrementAndGet();backing.value=initial;retainedRaw=null;status=RecoveryLoadStatus.READY }
+    fun resetToInitialAfterDiscard() = resetAfterDiscard(initial)
     override var value:T
         get()=backing.value
         set(value){requireReady();backing.value=value;write(encode(value))}
@@ -46,6 +53,34 @@ internal class RecoverableEditorState<T : Any>(initial:T, private val decode:(St
     override fun component2():(T)->Unit={value=it}
 }
 
+/** A multi-field form is committable only after every legacy field has loaded successfully. */
+internal class EditorRecoveryFields(vararg val fields:RecoverableEditorState<*>) {
+    val ready get()=fields.all {it.ready}
+    fun requireReady() = fields.forEach {it.requireReady()}
+    fun retry() = fields.forEach {it.retry()}
+    fun resetAfterDiscard() = fields.forEach {it.resetToInitialAfterDiscard()}
+}
+
+@Composable internal fun recoverableEncryptedText(controller:Controller,sessionId:String,projectId:String?,fieldName:String,initial:String="") =
+    recoverableEncryptedState(controller,sessionId,projectId,fieldName,initial,{it},{it})
+
+@Composable internal fun RecoveryFieldsProblem(fields:EditorRecoveryFields,controller:Controller,sessionId:String,language:UiLanguage,onDiscarded:()->Unit={},beforeDiscard:()->Unit={}) {
+    val loading=fields.fields.firstOrNull {it.status==RecoveryLoadStatus.LOADING}
+    val failed=fields.fields.firstOrNull {it.status==RecoveryLoadStatus.FAILED}
+    val shown=loading ?: failed ?: return
+    if(loading==null && fields.fields.size>1)
+        Text(tr(language,"放棄恢復會重設這份表單的全部恢復欄位。已正式保存的資料仍保留。","放弃恢复会重置这份表单的全部恢复字段。已正式保存的数据仍保留。","Discarding recovery resets every recovered field in this form. Saved records remain available."),Modifier.padding(horizontal=12.dp),style=MaterialTheme.typography.bodySmall)
+    RecoveryLoadProblem(shown,language) {
+        controller.perform {
+            beforeDiscard()
+            clearEditor(sessionId)
+            fields.resetAfterDiscard()
+            onDiscarded()
+        }
+    }
+    if(loading==null && failed!=null && fields.fields.count {it.status==RecoveryLoadStatus.FAILED}>1)
+        TextButton(onClick={fields.retry()}) {Text(tr(language,"重試全部欄位","重试全部字段","Retry all fields"))}
+}
 @Composable internal fun <T:Any> recoverableEncryptedState(controller:Controller,sessionId:String,projectId:String?,fieldName:String,
     initial:T,decode:(String)->T,encode:(T)->String):RecoverableEditorState<T> {
     val holder=remember(sessionId,fieldName){RecoverableEditorState(initial,decode,encode,
@@ -70,26 +105,3 @@ internal class RecoverableEditorState<T : Any>(initial:T, private val decode:(St
         }
     }
 }
-
-/** Only the opaque session ID is navigation state; every typed value is stored in encrypted SQLite. */
-@Composable fun <T> encryptedState(controller: Controller, sessionId: String, projectId: String?, fieldName: String,
-    initial: T, decode: (String) -> T, encode: (T) -> String): MutableState<T> {
-    val backing = remember(sessionId, fieldName) { mutableStateOf(initial) }
-    val edits = remember(sessionId, fieldName) { java.util.concurrent.atomic.AtomicLong() }
-    LaunchedEffect(sessionId, fieldName) {
-        val version = edits.get()
-        val restored = withContext(Dispatchers.IO) { controller.loadEditorField(sessionId, fieldName) }
-        if (restored != null && edits.get() == version) runCatching { decode(restored) }.onSuccess { backing.value = it }
-    }
-    return remember(sessionId, fieldName) {
-        object : MutableState<T> {
-            override var value: T
-                get() = backing.value
-                set(value) { edits.incrementAndGet(); backing.value = value; controller.queueEditorField(sessionId, projectId, fieldName, encode(value)) }
-            override fun component1() = value
-            override fun component2(): (T) -> Unit = { value = it }
-        }
-    }
-}
-@Composable fun encryptedText(controller: Controller, sessionId: String, projectId: String?, field: String, initial: String = "") =
-    encryptedState(controller, sessionId, projectId, field, initial, { it }, { it })

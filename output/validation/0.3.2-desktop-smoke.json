@@ -1,0 +1,25 @@
+{
+  "appVersion": "0.3.2-dev",
+  "checkedAt": "2026-10-22T18:45:39.1560364+08:00",
+  "scope": "Native app launch and visible anonymous review-list smoke observation only",
+  "anonymousFixture": {
+    "tasks": 520,
+    "submissions": 260,
+    "initialHumanAnswers": 0,
+    "sharedGeneratedEncryptedImage": true
+  },
+  "observed": [
+    "App window title shows 0.3.2-dev",
+    "Review table visibly reports 260 submissions and first page 1-50"
+  ],
+  "notCompleted": [
+    "Task dialog filters/search/keyboard",
+    "GUI manual answer save and reload",
+    "Three-language full workflow",
+    "Actual DPI matrix"
+  ],
+  "interruptedByUser": true,
+  "nativeExcelOpened": false,
+  "questionnaireScreenshotsCommitted": false,
+  "automatedSeparateEvidence": "output/validation/0.3.2-regression.json"
+}

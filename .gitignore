@@ -3,6 +3,8 @@
 **/build/
 .local/
 *.log
+__pycache__/
+*.pyc
 runtime/models/*.traineddata
 runtime/native/*
 !runtime/native/.gitkeep

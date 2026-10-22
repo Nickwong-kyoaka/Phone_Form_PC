@@ -24,7 +24,7 @@ import java.util.Locale
 }
 
 /** A dismissed editor keeps its encrypted recovery buffer; a failed flush leaves the dialog visible. */
-@Composable private fun safeDialogClose(controller: Controller, close: () -> Unit): () -> Unit {
+@Composable internal fun safeDialogClose(controller: Controller, close: () -> Unit): () -> Unit {
     val scope = rememberCoroutineScope()
     val currentClose by rememberUpdatedState(close)
     var saving by remember { mutableStateOf(false) }
@@ -40,7 +40,7 @@ import java.util.Locale
     }
 }
 
-@Composable private fun DialogProblem(state: AppSnapshot, language: UiLanguage) {
+@Composable internal fun DialogProblem(state: AppSnapshot, language: UiLanguage) {
     state.error?.let { error ->
         Text(message(language, error), Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.errorContainer).padding(12.dp),
             color = MaterialTheme.colorScheme.onErrorContainer, style = MaterialTheme.typography.bodySmall)
@@ -51,15 +51,29 @@ import java.util.Locale
     val state by controller.state.collectAsState()
     val scope = rememberCoroutineScope()
     val dismiss = safeDialogClose(controller, close)
-    var step by encryptedState(controller, "create-project", null, "wizardStep", 0, { it.toInt().coerceIn(0, 2) }, { it.toString() })
-    var name by encryptedText(controller, "create-project", null, "name")
-    var expected by encryptedText(controller, "create-project", null, "expected")
-    var questionnaire by encryptedState(controller, "create-project", null, "questionnaire", QuestionnaireLanguage.MIXED_CHINESE, { QuestionnaireLanguage.valueOf(it) }, { it.name })
-    var numbering by encryptedState(controller, "create-project", null, "numbering", NumberingStrategy.GENERATED, { NumberingStrategy.valueOf(it) }, { it.name })
-    var output by encryptedState(controller, "create-project", null, "output", OutputHeaderLanguage.valueOf(language.name), { OutputHeaderLanguage.valueOf(it) }, { it.name })
-    var manual by encryptedText(controller, "create-project", null, "manual")
-    var targets by encryptedText(controller, "create-project", null, "targets")
-    var extraction by encryptedState(controller, "create-project", null, "scope", ExtractionScope.ALL, { ExtractionScope.valueOf(it) }, { it.name })
+    val stepField=recoverableEncryptedState(controller,"create-project",null,"wizardStep",0,{it.toInt().also {step->require(step in 0..2){"EDITOR_RECOVERY_CORRUPT"}}},{it.toString()})
+    val nameField=recoverableEncryptedText(controller,"create-project",null,"name")
+    val expectedField=recoverableEncryptedText(controller,"create-project",null,"expected")
+    val questionnaireField=recoverableEncryptedState(controller,"create-project",null,"questionnaire",QuestionnaireLanguage.MIXED_CHINESE,{QuestionnaireLanguage.valueOf(it)},{it.name})
+    val numberingField=recoverableEncryptedState(controller,"create-project",null,"numbering",NumberingStrategy.GENERATED,{NumberingStrategy.valueOf(it)},{it.name})
+    val outputField=recoverableEncryptedState(controller,"create-project",null,"output",OutputHeaderLanguage.valueOf(language.name),{OutputHeaderLanguage.valueOf(it)},{it.name})
+    val manualField=recoverableEncryptedText(controller,"create-project",null,"manual")
+    val targetsField=recoverableEncryptedText(controller,"create-project",null,"targets")
+    val extractionField=recoverableEncryptedState(controller,"create-project",null,"scope",ExtractionScope.ALL,{ExtractionScope.valueOf(it)},{it.name})
+    val recovery=EditorRecoveryFields(stepField,nameField,expectedField,questionnaireField,numberingField,outputField,manualField,targetsField,extractionField)
+    if(!recovery.ready) {
+        AppDialog(tr(language,"建立專案","创建项目","New project"),dismiss,width=760.dp,height=480.dp) {
+            PanelHeading(tr(language,"恢復專案輸入","恢复项目输入","Restore project input"))
+            DialogProblem(state,language)
+            RecoveryFieldsProblem(recovery,controller,"create-project",language)
+            Spacer(Modifier.weight(1f))
+            DialogFooter {TextButton(onClick=dismiss,enabled=!state.busy){Text(tr(language,"稍後繼續","稍后继续","Continue later"))}}
+        }
+        return
+    }
+    var step by stepField;var name by nameField;var expected by expectedField
+    var questionnaire by questionnaireField;var numbering by numberingField;var output by outputField
+    var manual by manualField;var targets by targetsField;var extraction by extractionField
     var attempted by remember { mutableStateOf(false) }
     val expectedValid = expected.isBlank() || expected.trim().toIntOrNull()?.let { it > 0 } == true
     val basicValid = name.isNotBlank() && expectedValid
@@ -67,9 +81,11 @@ import java.util.Locale
         attempted = true
         if (!basicValid) { step = 0; return }
         controller.perform {
-            val fields = targets.lineSequence().map(String::trim).filter(String::isNotBlank).map { it to FieldSource.QUESTIONNAIRE }.toList() +
-                manual.lineSequence().map(String::trim).filter(String::isNotBlank).map { it to FieldSource.MANUAL_METADATA }.toList()
-            createProject(name, expected.trim().toIntOrNull(), questionnaire, numbering, output, fields, extraction)
+            recovery.requireReady()
+            val current=projectEditorValues(nameField,expectedField)
+            val fields = targetsField.value.lineSequence().map(String::trim).filter(String::isNotBlank).map { it to FieldSource.QUESTIONNAIRE }.toList() +
+                manualField.value.lineSequence().map(String::trim).filter(String::isNotBlank).map { it to FieldSource.MANUAL_METADATA }.toList()
+            createProject(current.name,current.expected,questionnaireField.value,numberingField.value,outputField.value,fields,extractionField.value)
             scope.launch { close() }
         }
     }
@@ -80,7 +96,9 @@ import java.util.Locale
         Row(Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             steps.forEachIndexed { index, label ->
                 FilterChip(selected = step == index, onClick = {
-                    if (index == 0 || basicValid) step = index else { attempted = true; step = 0 }
+                    if(!controller.state.value.busy) {
+                        if (index == 0 || basicValid) step = index else { attempted = true; step = 0 }
+                    }
                 }, enabled = !state.busy, label = { Text("${index + 1}  $label") })
             }
         }
@@ -88,26 +106,26 @@ import java.util.Locale
         Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(24.dp), verticalArrangement = Arrangement.spacedBy(18.dp)) {
             when (step) {
                 0 -> {
-                    OutlinedTextField(name, { name = it }, enabled = !state.busy, label = { Text(tr(language, "專案名稱", "项目名称", "Project name")) },
+                    OutlinedTextField(name, {entered->controller.editIfAvailable(nameField){entered}}, enabled = !state.busy, label = { Text(tr(language, "專案名稱", "项目名称", "Project name")) },
                         singleLine = true, isError = attempted && name.isBlank(), modifier = Modifier.fillMaxWidth())
-                    OutlinedTextField(expected, { expected = it }, enabled = !state.busy, label = { Text(tr(language, "預計份數（選填）", "预计份数（可选）", "Expected submissions (optional)")) },
+                    OutlinedTextField(expected, {entered->controller.editIfAvailable(expectedField){entered}}, enabled = !state.busy, label = { Text(tr(language, "預計份數（選填）", "预计份数（可选）", "Expected submissions (optional)")) },
                         singleLine = true, isError = !expectedValid, modifier = Modifier.fillMaxWidth())
                     if (attempted && name.isBlank()) Text(tr(language, "請輸入專案名稱。", "请输入项目名称。", "Enter a project name."), color = MaterialTheme.colorScheme.error)
                     if (!expectedValid) Text(tr(language, "份數須為大於零的整數。", "份数须为大于零的整数。", "Use a positive whole number."), color = MaterialTheme.colorScheme.error)
                     Text(tr(language, "預計份數用於顯示進度，不限制實際采集份數。", "预计份数用于显示进度，不限制实际采集份数。", "The expected count helps track progress and does not limit collection."), color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 1 -> {
-                    EnumChoice(tr(language, "問卷語言", "问卷语言", "Questionnaire language"), QuestionnaireLanguage.entries, questionnaire, { if (!state.busy) questionnaire = it }, language)
+                    EnumChoice(tr(language, "問卷語言", "问卷语言", "Questionnaire language"), QuestionnaireLanguage.entries, questionnaire, {selected->controller.editIfAvailable(questionnaireField){selected}}, language)
                     Text(tr(language, "用於本地辨識；不會翻譯題目或答案。", "用于本地识别；不会翻译题目或答案。", "Used for local recognition. Question text and answers are preserved."), color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    EnumChoice(tr(language, "問卷編號", "问卷编号", "Submission numbering"), NumberingStrategy.entries, numbering, { if (!state.busy) numbering = it }, language)
+                    EnumChoice(tr(language, "問卷編號", "问卷编号", "Submission numbering"), NumberingStrategy.entries, numbering, {selected->controller.editIfAvailable(numberingField){selected}}, language)
                     Text(if (numbering == NumberingStrategy.PAPER_ID) tr(language, "每份問卷提交前須填寫紙面編號；保留前導零。", "每份问卷提交前须填写纸面编号；保留前导零。", "Enter the printed ID before each submission. Leading zeros are preserved.")
                         else tr(language, "程式按提交順序產生編號。", "程序按提交顺序生成编号。", "The app assigns numbers in submission order."), color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 2 -> {
-                    EnumChoice(tr(language, "Excel 標題語言", "Excel 标题语言", "Excel header language"), OutputHeaderLanguage.entries, output, { if (!state.busy) output = it }, language)
-                    EnumChoice(tr(language, "提取範圍", "提取范围", "Extraction scope"), ExtractionScope.entries, extraction, { if (!state.busy) extraction = it }, language)
-                    OutlinedTextField(targets, { targets = it }, enabled = !state.busy, label = { Text(tr(language, "問卷輸出欄位（每行一個）", "问卷输出字段（每行一个）", "Questionnaire output fields (one per line)")) }, minLines = 3, modifier = Modifier.fillMaxWidth())
-                    OutlinedTextField(manual, { manual = it }, enabled = !state.busy, label = { Text(tr(language, "人工資料欄位（每行一個）", "人工信息字段（每行一个）", "Manual metadata fields (one per line)")) }, minLines = 3, modifier = Modifier.fillMaxWidth())
+                    EnumChoice(tr(language, "Excel 標題語言", "Excel 标题语言", "Excel header language"), OutputHeaderLanguage.entries, output, {selected->controller.editIfAvailable(outputField){selected}}, language)
+                    EnumChoice(tr(language, "提取範圍", "提取范围", "Extraction scope"), ExtractionScope.entries, extraction, {selected->controller.editIfAvailable(extractionField){selected}}, language)
+                    OutlinedTextField(targets, {entered->controller.editIfAvailable(targetsField){entered}}, enabled = !state.busy, label = { Text(tr(language, "問卷輸出欄位（每行一個）", "问卷输出字段（每行一个）", "Questionnaire output fields (one per line)")) }, minLines = 3, modifier = Modifier.fillMaxWidth())
+                    OutlinedTextField(manual, {entered->controller.editIfAvailable(manualField){entered}}, enabled = !state.busy, label = { Text(tr(language, "人工資料欄位（每行一個）", "人工信息字段（每行一个）", "Manual metadata fields (one per line)")) }, minLines = 3, modifier = Modifier.fillMaxWidth())
                     Text(tr(language, "問卷欄位在範本內綁定題目；個人標識預設不匯出。", "问卷字段在模板中绑定题目；个人标识默认不导出。", "Map questionnaire fields to template questions. Personal identifiers are excluded by default."), color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
@@ -116,8 +134,8 @@ import java.util.Locale
             Text(tr(language, "第 ${step + 1} / 3 步", "第 ${step + 1} / 3 步", "Step ${step + 1} of 3"), color = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(Modifier.weight(1f))
             TextButton(onClick = dismiss, enabled = !state.busy) { Text(tr(language, "稍後繼續", "稍后继续", "Continue later")) }
-            if (step > 0) OutlinedButton(onClick = { step-- }, enabled = !state.busy) { Text(tr(language, "上一步", "上一步", "Back")) }
-            Button(onClick = { if (step == 2) finish() else { attempted = true; if (basicValid) step++ } }, enabled = !state.busy) {
+            if (step > 0) OutlinedButton(onClick = {if(!controller.state.value.busy)step--}, enabled = !state.busy) { Text(tr(language, "上一步", "上一步", "Back")) }
+            Button(onClick = {if(!controller.state.value.busy){if(step==2)finish()else{attempted=true;if(basicValid)step++}}}, enabled = !state.busy) {
                 Text(if (step == 2) tr(language, "建立專案", "创建项目", "Create project") else tr(language, "下一步", "下一步", "Next"))
             }
         }
@@ -128,16 +146,24 @@ import java.util.Locale
     val state by controller.state.collectAsState()
     val scope = rememberCoroutineScope()
     val session = "project:${project.project.id}"
-    var name by encryptedText(controller, session, project.project.id, "name", project.project.name)
-    var expected by encryptedText(controller, session, project.project.id, "expected", project.project.expectedCount?.toString().orEmpty())
+    val nameField=recoverableEncryptedText(controller,session,project.project.id,"name",project.project.name)
+    val expectedField=recoverableEncryptedText(controller,session,project.project.id,"expected",project.project.expectedCount?.toString().orEmpty())
+    val recovery=EditorRecoveryFields(nameField,expectedField)
+    var name by nameField;var expected by expectedField
     val valid = name.isNotBlank() && (expected.isBlank() || expected.trim().toIntOrNull()?.let { it > 0 } == true)
     val dismiss = safeDialogClose(controller, close)
     AppDialog(tr(language, "專案設定", "项目设置", "Project settings"), dismiss, width = 620.dp, height = 480.dp) {
         PanelHeading(tr(language, "專案資料", "项目信息", "Project information"))
         DialogProblem(state, language)
+        if(!recovery.ready) {
+            RecoveryFieldsProblem(recovery,controller,session,language)
+            Spacer(Modifier.weight(1f))
+            DialogFooter {TextButton(onClick=dismiss,enabled=!state.busy){Text(tr(language,"稍後繼續","稍后继续","Continue later"))}}
+            return@AppDialog
+        }
         Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(24.dp), verticalArrangement = Arrangement.spacedBy(18.dp)) {
-            OutlinedTextField(name, { name = it }, enabled = !state.busy, label = { Text(tr(language, "專案名稱", "项目名称", "Project name")) }, singleLine = true, modifier = Modifier.fillMaxWidth())
-            OutlinedTextField(expected, { expected = it }, enabled = !state.busy, label = { Text(tr(language, "預計份數（選填）", "预计份数（可选）", "Expected submissions (optional)")) }, singleLine = true, modifier = Modifier.fillMaxWidth())
+            OutlinedTextField(name, {entered->controller.editIfAvailable(nameField){entered}}, enabled = !state.busy, label = { Text(tr(language, "專案名稱", "项目名称", "Project name")) }, singleLine = true, modifier = Modifier.fillMaxWidth())
+            OutlinedTextField(expected, {entered->controller.editIfAvailable(expectedField){entered}}, enabled = !state.busy, label = { Text(tr(language, "預計份數（選填）", "预计份数（可选）", "Expected submissions (optional)")) }, singleLine = true, modifier = Modifier.fillMaxWidth())
             if (!valid) Text(tr(language, "請填寫名稱，份數須留空或填正整數。", "请填写名称，份数须留空或填正整数。", "Enter a name and leave the count blank or use a positive whole number."), color = MaterialTheme.colorScheme.error)
             Text(tr(language, "問卷、編號與輸出設定保持各自的版本。", "问卷、编号和输出设置分别管理版本。", "Questionnaire, numbering and output settings retain their own versions."), color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
@@ -145,7 +171,8 @@ import java.util.Locale
             Spacer(Modifier.weight(1f))
             TextButton(onClick = dismiss, enabled = !state.busy) { Text(tr(language, "取消", "取消", "Cancel")) }
             Button(onClick = { controller.perform {
-                repositories.projects.saveProjectSection(project.copy(project = project.project.copy(name = name.trim(), expectedCount = expected.trim().toIntOrNull())), ProjectEditSection.PROJECT_INFO)
+                val current=projectEditorValues(nameField,expectedField)
+                repositories.projects.saveProjectSection(project.copy(project = project.project.copy(name=current.name,expectedCount=current.expected)),ProjectEditSection.PROJECT_INFO)
                 clearEditor(session); scope.launch { close() }
             } }, enabled = valid && !state.busy) { Text(tr(language, "保存變更", "保存更改", "Save changes")) }
         }
@@ -211,7 +238,7 @@ import java.util.Locale
                         val knownStates = setOf("QUEUED", "RUNNING", "PAUSED", "BLOCKED", "FAILED", "READY", "SUPERSEDED")
                         val counts = state.taskStatusCounts.filterKeys { it in knownStates }
                         val safeReport = linkedMapOf<String, Any>(
-                            "application" to "PhoneForm AI PC", "version" to "0.3.1-dev",
+                            "application" to "PhoneForm AI PC", "version" to "0.3.2-dev",
                             "os" to System.getProperty("os.name"), "osVersion" to System.getProperty("os.version"),
                             "architecture" to System.getProperty("os.arch"), "javaVersion" to System.getProperty("java.version"),
                             "ocrAvailable" to runtime.ocrAvailable, "openCvAvailable" to runtime.openCvAvailable,
@@ -232,7 +259,7 @@ import java.util.Locale
                 }
                 3 -> {
                     Text("PhoneForm AI PC", style = MaterialTheme.typography.headlineSmall)
-                    StatusBadge("0.3.1-dev")
+                    StatusBadge("0.3.2-dev")
                     Text(tr(language, "Windows 離線問卷辨識與人工覆核", "Windows 离线问卷识别与人工复核", "Offline questionnaire recognition and review for Windows"))
                     Text(tr(language, "PDF、JPG、PNG → 本地處理 → 人工覆核 → Excel 四表輸出。", "PDF、JPG、PNG → 本地处理 → 人工复核 → Excel 四表导出。", "PDF, JPG, PNG → local processing → human review → four-sheet Excel export."), color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Text(tr(language, "內部試用版本。資料保存在目前 Windows 使用者的加密儲存空間。", "内部试用版本。数据保存在当前 Windows 用户的加密存储中。", "Internal preview. Data is kept in encrypted storage for the current Windows user."), color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -271,65 +298,6 @@ fun taskStatus(language: UiLanguage, status: String): String = when (status) {
     "READY" -> tr(language, "已完成", "已完成", "Completed")
     "SUPERSEDED" -> tr(language, "已被新修訂取代", "已被新修订替代", "Superseded")
     else -> tr(language, "等待更新", "等待更新", "Awaiting update")
-}
-
-@Composable fun TaskCenter(controller: Controller, language: UiLanguage, close: () -> Unit) {
-    val tasks by controller.tasks.collectAsState()
-    val state by controller.state.collectAsState()
-    var tab by remember { mutableStateOf(0) }
-    var search by remember { mutableStateOf("") }
-    var details by remember { mutableStateOf<String?>(null) }
-    val active = pendingTaskStatuses
-    val activeCount = pendingTaskCount(state.taskStatusCounts)
-    val failedCount = state.taskStatusCounts["FAILED"] ?: 0
-    val visible = tasks.filter { task ->
-        (when (tab) { 0 -> task.status in active; 1 -> task.status == "FAILED"; 2 -> task.status == "READY"; else -> true }) &&
-            (search.isBlank() || task.projectName.contains(search, true) || taskPhase(language, task.phase).contains(search, true) || task.submissionNumber?.toString()?.contains(search) == true)
-    }
-    val dismiss = safeDialogClose(controller, close)
-    AppDialog(tr(language, "任務中心", "任务中心", "Task center"), dismiss, width = 980.dp, height = 720.dp) {
-        WorkspaceToolbar(tr(language, "任務中心", "任务中心", "Task center"),
-            tr(language, "$activeCount 項待處理 · $failedCount 項失敗", "$activeCount 项待处理 · $failedCount 项失败", "$activeCount pending / action needed · $failedCount failed")) {
-            OutlinedButton(onClick = controller::togglePaused) { Text(if (state.paused) tr(language, "繼續處理", "继续处理", "Resume processing") else tr(language, "暫停處理", "暂停处理", "Pause processing")) }
-        }
-        InspectorTabs(listOf(tr(language, "待處理", "待处理", "Pending / action needed"), tr(language, "失敗", "失败", "Failed"), tr(language, "已完成", "已完成", "Completed"), tr(language, "全部", "全部", "All")), tab) { tab = it }
-        DialogProblem(state, language)
-        if (state.taskTotal > tasks.size) Text(tr(language,
-            "顯示前 ${tasks.size} 項，共 ${state.taskTotal} 項；搜尋與篩選只套用於這批任務。",
-            "显示前 ${tasks.size} 项，共 ${state.taskTotal} 项；搜索与筛选仅适用于这批任务。",
-            "Showing the first ${tasks.size} of ${state.taskTotal} tasks. Search and filters apply to this displayed batch."),
-            Modifier.padding(horizontal=20.dp,vertical=8.dp),style=MaterialTheme.typography.bodySmall)
-        OutlinedTextField(search, { search = it }, label = { Text(tr(language, "搜尋專案或問卷編號", "搜索项目或问卷编号", "Search project or submission number")) }, singleLine = true, modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 12.dp))
-        if (visible.isEmpty()) Box(Modifier.weight(1f).fillMaxWidth()) {
-            EmptyState(tr(language, "沒有符合條件的任務", "没有符合条件的任务", "No matching tasks"),
-                tr(language, "匯入或提交後，實際處理任務會顯示在這裡。", "导入或提交后，实际处理任务会显示在这里。", "Processing tasks appear here after an import or submission."))
-        } else LazyColumn(Modifier.weight(1f).fillMaxWidth().padding(horizontal = 20.dp)) {
-            items(visible, key = { it.id }) { task ->
-                Column {
-                    Row(Modifier.fillMaxWidth().heightIn(min = 64.dp).padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        AppIcon(if (task.phase == "RECOGNITION") "review" else "document", Modifier.size(20.dp))
-                        Column(Modifier.weight(1f)) {
-                            Text(task.projectName, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                            Text(taskPhase(language, task.phase) + listOfNotNull(
-                                task.submissionNumber?.let { tr(language, "第 $it 份", "第 $it 份", "Submission $it") },
-                                task.pageNumber?.let { tr(language, "第 $it 頁", "第 $it 页", "Page $it") }).joinToString(" · ", prefix = if (task.submissionNumber != null || task.pageNumber != null) " · " else ""),
-                                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
-                        StatusBadge(taskStatus(language, task.status), good = task.status == "READY", warning = task.status == "FAILED")
-                        if (task.retrySupported) TextButton(onClick = { controller.retryTask(task.id) }, enabled = !state.busy) { Text(tr(language, "重試", "重试", "Retry")) }
-                        if (!task.error.isNullOrBlank()) TextButton(onClick = { details = if (details == task.id) null else task.id }) { Text(tr(language, "詳情", "详情", "Details")) }
-                    }
-                    if (details == task.id) Text(task.error.orEmpty(), Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surfaceVariant).padding(12.dp), style = MaterialTheme.typography.bodySmall)
-                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                }
-            }
-        }
-        DialogFooter {
-            Text(if (state.paused) tr(language, "已暫停；目前單頁步驟會保存檢查點。", "已暂停；当前单页步骤会保存检查点。", "Paused. The current page step will checkpoint.")
-                else tr(language, "縮小視窗後會繼續處理。", "最小化窗口后继续处理。", "Processing continues while minimized."), Modifier.weight(1f), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Button(onClick = dismiss, enabled = !state.busy) { Text(tr(language, "關閉", "关闭", "Close")) }
-        }
-    }
 }
 
 @Composable fun HelpDialog(controller: Controller, language: UiLanguage, close: () -> Unit) {

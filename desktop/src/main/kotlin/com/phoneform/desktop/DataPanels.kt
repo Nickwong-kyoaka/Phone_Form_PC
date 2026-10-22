@@ -39,25 +39,38 @@ import java.time.format.DateTimeFormatter
         ?: template?.document?.pages?.minByOrNull { it.position }
     val page = draft?.pages?.firstOrNull { it.templatePageId == selectedSlot?.id }
     val respondentSession = "respondent:${draft?.id}"
-    var respondent by encryptedText(controller, respondentSession, projectId, "value", draft?.respondentId.orEmpty())
+    val respondentField=recoverableEncryptedText(controller,respondentSession,projectId,"value",draft?.respondentId.orEmpty())
+    var respondent by respondentField
     var confirmation by remember(draft?.id) { mutableStateOf(false) }
     var discard by remember(draft?.id) { mutableStateOf(false) }
     var acceptMissing by remember(draft?.id) { mutableStateOf(false) }
     var acceptDuplicates by remember(draft?.id) { mutableStateOf(false) }
     val confirmationSession = "collection-confirm:${draft?.id}:${draft?.editRevision}"
-    var repeatReason by encryptedText(controller, confirmationSession, projectId, "repeatReason")
+    val repeatReasonField=recoverableEncryptedText(controller,confirmationSession,projectId,"repeatReason")
+    var repeatReason by repeatReasonField
+    val collectionRecovery=EditorRecoveryFields(respondentField,repeatReasonField)
     val paperIdRequired = state.project?.project?.numberingStrategy == NumberingStrategy.PAPER_ID
     val saveId: () -> Unit = {
         draft?.let { current -> controller.perform {
-            if (respondent != current.respondentId) repositories.submissions.saveDraft(current.copy(respondentId = respondent))
+            respondentField.requireReady()
+            val latestId=respondentField.value
+            if (latestId != current.respondentId) repositories.submissions.saveDraft(current.copy(respondentId = latestId))
             clearEditor(respondentSession)
         } }
     }
-    RegisterSaveAction(draft != null && !state.busy, saveId)
+    RegisterSaveAction(draft != null && !state.busy && respondentField.ready, saveId)
 
     if (template == null || state.templateDraft != null) {
         EmptyState(tr(language,"先完成範本設定","先完成模板设置","Finish the template first"),
             tr(language,"確認範本並處理未確認的草稿後，就可以逐份匯入問卷。","确认模板并处理未确认的草稿后，就可以逐份导入问卷。","Confirm the template and resolve its draft before importing questionnaires."))
+        return
+    }
+    if(draft!=null && !collectionRecovery.ready) {
+        Column(Modifier.fillMaxSize()) {
+            WorkspaceToolbar(tr(language,"匯入問卷","导入问卷","Import questionnaires")) {}
+            if(!respondentField.ready)RecoveryFieldsProblem(EditorRecoveryFields(respondentField),controller,respondentSession,language)
+            if(!repeatReasonField.ready)RecoveryFieldsProblem(EditorRecoveryFields(repeatReasonField),controller,confirmationSession,language)
+        }
         return
     }
     Column(Modifier.fillMaxSize()) {
@@ -113,7 +126,7 @@ import java.time.format.DateTimeFormatter
                     Column(Modifier.fillMaxSize()) {
                         Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
                             PanelHeading(tr(language,"第 $number 份問卷","第 $number 份问卷","Questionnaire $number"), tr(language,"草稿 r${draft.editRevision}","草稿 r${draft.editRevision}","Draft r${draft.editRevision}"))
-                            Field(tr(language,"紙面編號","纸面编号","Paper ID"), respondent, { respondent = it })
+                            Field(tr(language,"紙面編號","纸面编号","Paper ID"), respondent, {entered->controller.editIfAvailable(respondentField){entered}})
                             Text(if (paperIdRequired && respondent.isBlank()) tr(language,"此專案需要紙面編號。請先填寫，再提交。","此项目需要纸面编号。请先填写，再提交。","Paper ID is required for this project. Enter it before submitting.") else tr(language,"以文字保存，保留前導零。","以文字保存，保留前导零。","Stored as text, including leading zeros."), style = MaterialTheme.typography.bodySmall, color = if (paperIdRequired && respondent.isBlank()) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant)
                             OutlinedButton(onClick = saveId, enabled = !state.busy, modifier = Modifier.fillMaxWidth()) { Text(tr(language,"保存編號","保存编号","Save ID")) }
                             HorizontalDivider()
@@ -131,7 +144,7 @@ import java.time.format.DateTimeFormatter
                         }
                         HorizontalDivider()
                         Column(Modifier.padding(16.dp)) {
-                            Button(onClick = { confirmation = true; acceptMissing = false; acceptDuplicates = false }, enabled = draft.pages.isNotEmpty() && !state.busy && (!paperIdRequired || respondent.isNotBlank()), modifier = Modifier.fillMaxWidth()) {
+                            Button(onClick = {if(!controller.state.value.busy){confirmation=true;acceptMissing=false;acceptDuplicates=false}}, enabled = draft.pages.isNotEmpty() && !state.busy && (!paperIdRequired || respondent.isNotBlank()), modifier = Modifier.fillMaxWidth()) {
                                 Text(tr(language,"提交並開始下一份","提交并开始下一份","Submit and start next"))
                             }
                         }
@@ -155,15 +168,16 @@ import java.time.format.DateTimeFormatter
             Text(tr(language,"紙面編號：","纸面编号：","Paper ID: ") + respondent.ifBlank { "—" })
             if (missingSlots.isNotEmpty()) {
                 Text(tr(language,"缺少頁槽：","缺少页槽：","Missing slots: ") + missingSlots.joinToString { "${it.position + 1}" }, color = MaterialTheme.colorScheme.error)
-                CheckLine(acceptMissing, { acceptMissing = it }, tr(language,"接受以上缺頁，保持固定頁槽","接受以上缺页，保持固定页槽","Accept these missing pages and keep their slots"))
+                CheckLine(acceptMissing, {if(!controller.state.value.busy)acceptMissing=it}, tr(language,"接受以上缺頁，保持固定頁槽","接受以上缺页，保持固定页槽","Accept these missing pages and keep their slots"))
             } else Text(tr(language,"頁槽完整","页槽完整","All page slots are filled"))
-            CheckLine(acceptDuplicates, { acceptDuplicates = it }, tr(language,"已核對重複來源提示","已核对重复来源提示","I checked duplicate source pages"))
-            Field(tr(language,"重複紙面編號的提交理由（如適用）","重复纸面编号的提交理由（如适用）","Reason for a repeated paper ID, if applicable"), repeatReason, { repeatReason = it }, false)
+            CheckLine(acceptDuplicates, {if(!controller.state.value.busy)acceptDuplicates=it}, tr(language,"已核對重複來源提示","已核对重复来源提示","I checked duplicate source pages"))
+            Field(tr(language,"重複紙面編號的提交理由（如適用）","重复纸面编号的提交理由（如适用）","Reason for a repeated paper ID, if applicable"), repeatReason, {entered->controller.editIfAvailable(repeatReasonField){entered}}, false)
             Text(tr(language,"影像品質提示仍須先處理。提交成功後會自動開始下一份。","图像质量提示仍须先处理。提交成功后会自动开始下一份。","Resolve any image quality checks first. A new questionnaire starts after submission."), style = MaterialTheme.typography.bodySmall)
         } },
         confirmButton = { Button(onClick = { controller.perform {
-            val saved = if (respondent != draft.respondentId) repositories.submissions.saveDraft(draft.copy(respondentId = respondent)) else draft
-            repositories.submissions.submitSubmission(saved.id, saved.editRevision, SubmissionConfirmation(acceptMissing, acceptDuplicates, repeatReason))
+            val current=collectionEditorValues(respondentField,repeatReasonField,paperIdRequired)
+            val saved = if (current.paperId != draft.respondentId) repositories.submissions.saveDraft(draft.copy(respondentId = current.paperId)) else draft
+            repositories.submissions.submitSubmission(saved.id,saved.editRevision,SubmissionConfirmation(acceptMissing,acceptDuplicates,current.repeatReason))
             clearEditor(respondentSession); clearEditor(confirmationSession); confirmation = false; beginCollection()
             controller.updateProjectUi(projectId) { it.copy(collectionDraftId = null, collectionPageId = null) }
         } }, enabled = !state.busy && (template.document.pages.all { slot -> draft.pages.any { it.templatePageId == slot.id } } || acceptMissing)) { Text(tr(language,"確認提交","确认提交","Submit")) } },
@@ -180,7 +194,7 @@ import java.time.format.DateTimeFormatter
     val listState = pageState.takeIf { it.projectId == projectId }
     val page = listState?.page
     val summaries = page?.items.orEmpty()
-    val pageInteractive = listState != null && !listState.loading && !listState.stale && listState.error == null
+    val pageInteractive = page != null && listState != null && !listState.stale && listState.error == null
     val activeId = ui.reviewSubmissionId
     var recognitionSettings by remember(projectId){mutableStateOf(false)}
     var rerunTargets by remember(projectId){mutableStateOf<List<RecognitionRerunTarget>?>(null)}
@@ -197,13 +211,15 @@ import java.time.format.DateTimeFormatter
     var loadError by remember(projectId) { mutableStateOf(false) }
     var loading by remember(projectId) { mutableStateOf(false) }
     var reload by remember(projectId) { mutableStateOf(0) }
+    var loadedReload by remember(projectId) { mutableStateOf(-1) }
     var invalidKeys by remember(projectId) { mutableStateOf<List<String>?>(null) }
     var selectedSummary by remember(projectId) { mutableStateOf<ReviewListSummary?>(null) }
     var neighbors by remember(projectId) { mutableStateOf(ReviewNeighbors()) }
     var loadGeneration by remember(projectId) { mutableStateOf(0) }
+    val requestedReload=reload
     LaunchedEffect(activeId, state.dataRevision, reload, ui.reviewWorkspace, ui.reviewSearch, ui.reviewFilter) {
         val ticket = ++loadGeneration
-        if (!ui.reviewWorkspace || activeId == null) { workspace = null; selectedSummary = null; neighbors = ReviewNeighbors(); loading = false }
+        if (!ui.reviewWorkspace || activeId == null) { workspace = null; selectedSummary = null; neighbors = ReviewNeighbors(); loading = false;loadedReload=-1 }
         else {
             loading = true; loadError = false
             try {
@@ -212,7 +228,7 @@ import java.time.format.DateTimeFormatter
                         controller.repositories.intelligence.getReviewSummary(activeId),
                         controller.repositories.intelligence.reviewNeighbors(projectId, activeId, ui.reviewQuery()))
                 }
-                if (ticket == loadGeneration) { workspace = loaded.first; selectedSummary = loaded.second; neighbors = loaded.third }
+                if (ticket == loadGeneration) { workspace = loaded.first; selectedSummary = loaded.second; neighbors = loaded.third;loadedReload=requestedReload }
             }
             catch (e: Exception) { if (e is kotlinx.coroutines.CancellationException) throw e; if (ticket == loadGeneration) { workspace = null; selectedSummary = null; loadError = true } }
             finally { if (ticket == loadGeneration) loading = false }
@@ -290,7 +306,16 @@ import java.time.format.DateTimeFormatter
         return
     }
     val review = workspace?.takeIf { it.submission.id == activeId }
-    val imagesReady = selectedSummary?.takeIf { it.submissionId == activeId }?.preparationStatus == PreparationJobStatus.READY
+    val reviewGate=review?.let {expected->ReviewEditGate {
+        val liveUi=controller.ui.value
+        val projectUi=liveUi.projects[projectId]
+        // Ordinary editor-buffer writes also refresh dataRevision. Keep an unchanged loaded
+        // workspace editable during that refresh; an explicit reload invalidates it at once.
+        currentReviewWorkspace(expected,workspace,reload,loadedReload,loading && loadedReload!=reload,liveUi.projectId,projectUi?.reviewSubmissionId,
+            projectUi?.reviewWorkspace==true && liveUi.section==WorkspaceSection.REVIEW)
+    }}
+    val workspaceReady=reviewGate?.ready==true
+    val imagesReady = selectedSummary?.takeIf { it.submissionId == activeId && it.submissionRevisionId==review?.revision?.id }?.preparationStatus == PreparationJobStatus.READY
     var editorDirty by remember(activeId, review?.revision?.id, review?.answers?.version) { mutableStateOf(false) }
     var saveCurrent by remember(activeId, review?.revision?.id, review?.answers?.version) { mutableStateOf<(() -> Unit)?>(null) }
     var pendingRecoveryKeys by remember(activeId, review?.revision?.id, review?.answers?.version) { mutableStateOf<List<String>>(emptyList()) }
@@ -299,16 +324,18 @@ import java.time.format.DateTimeFormatter
     var showRecovery by remember(activeId) { mutableStateOf(false) }
     var recoveryChecking by remember(activeId, review?.revision?.id, review?.answers?.version) { mutableStateOf(true) }
     var recoveryFailed by remember(activeId, review?.revision?.id, review?.answers?.version) { mutableStateOf(false) }
+    var corruptMarkerRaw by remember(activeId,review?.revision?.id,review?.answers?.version){mutableStateOf<String?>(null)}
+    var showCorruptMarker by remember(activeId){mutableStateOf(false)}
     var recoveryRetry by remember(activeId) { mutableStateOf(0) }
     LaunchedEffect(review?.revision?.id, review?.answers?.version, recoveryRetry) {
         if (review == null) { recoveryChecking = false; return@LaunchedEffect }
-        recoveryChecking = true; recoveryFailed = false
+        recoveryChecking = true; recoveryFailed = false;corruptMarkerRaw=null
         try {
             val (recovered, blocks, blocked) = withContext(Dispatchers.IO) {
                 val current = review.targets.mapNotNull { target ->
                     controller.loadEditorField(answerEditorSession(review, target.key), "value")?.let { target.key to it }
                 }.toMap()
-                val blocks = controller.loadEditorField(answerRecoveryMarker(review.revision.id), "blocked")?.let { editorJson.fromJson(it, Array<AnswerRecoveryBlock>::class.java).toList() }.orEmpty().filter { it.sourceVersion != (review.answers?.version ?: 0) }
+                val blocks = controller.loadAnswerRecoveryBlocks(review.revision.id).filter { it.sourceVersion != (review.answers?.version ?: 0) }
                 Triple(current, blocks, blocks.mapNotNull { block -> controller.loadEditorField(answerEditorSession(review, block.targetKey, block.sourceVersion), "value")?.let { block to it } }.toMap())
             }
             pendingRecoveryKeys = dirtyReviewRecoveryTargets(review, recovered)
@@ -317,34 +344,37 @@ import java.time.format.DateTimeFormatter
             if (!editorDirty && pendingRecoveryKeys.isNotEmpty() && current !in pendingRecoveryKeys)
                 controller.updateProjectUi(projectId) { it.copy(reviewTargetKey = pendingRecoveryKeys.first()) }
         } catch (failure: kotlinx.coroutines.CancellationException) { throw failure }
+        catch(failure:CorruptAnswerRecoveryMarker){corruptMarkerRaw=failure.retainedRaw;recoveryFailed=true}
         catch (_: Exception) { recoveryFailed = true }
         finally { recoveryChecking = false }
     }
-    val guardNavigation = editorDirty || pendingRecoveryKeys.isNotEmpty() || recoveryBlocks.isNotEmpty() || recoveryChecking || recoveryFailed
+    val guardNavigation = !workspaceReady || editorDirty || pendingRecoveryKeys.isNotEmpty() || recoveryBlocks.isNotEmpty() || recoveryChecking || recoveryFailed
     Column(Modifier.fillMaxSize()) {
         WorkspaceToolbar(review?.let { tr(language,"第 ${it.submission.number} 份問卷","第 ${it.submission.number} 份问卷","Questionnaire ${it.submission.number}") } ?: tr(language,"人工覆核","人工复核","Review"),
             review?.let { tr(language,"提交修訂 ${it.revision.number} · ${if (it.confirmation != null) "已確認" else "待覆核"}","提交修订 ${it.revision.number} · ${if (it.confirmation != null) "已确认" else "待复核"}","Revision ${it.revision.number} · ${if (it.confirmation != null) "Confirmed" else "Pending review"}") }) {
-            TextButton(onClick = { controller.updateProjectUi(projectId) { it.copy(reviewWorkspace = false) } }, enabled = !state.busy && (review == null || !guardNavigation)) { Text(tr(language,"返回列表","返回列表","Back to list")) }
-            OutlinedButton(onClick = { neighbors.previousSubmissionId?.let(::open) }, enabled = neighbors.previousSubmissionId != null && !state.busy && !loading && !guardNavigation) { Text(tr(language,"上一份","上一份","Previous")) }
-            OutlinedButton(onClick = { neighbors.nextSubmissionId?.let(::open) }, enabled = neighbors.nextSubmissionId != null && !state.busy && !loading && !guardNavigation) { Text(tr(language,"下一份","下一份","Next")) }
+            TextButton(onClick = {if(review==null || reviewGate?.ready==true)controller.updateProjectUi(projectId){it.copy(reviewWorkspace=false)}}, enabled = !state.busy && (review == null || !guardNavigation)) { Text(tr(language,"返回列表","返回列表","Back to list")) }
+            OutlinedButton(onClick = {reviewGate?.run{neighbors.previousSubmissionId?.let(::open)}}, enabled = neighbors.previousSubmissionId != null && !state.busy && !loading && !guardNavigation) { Text(tr(language,"上一份","上一份","Previous")) }
+            OutlinedButton(onClick = {reviewGate?.run{neighbors.nextSubmissionId?.let(::open)}}, enabled = neighbors.nextSubmissionId != null && !state.busy && !loading && !guardNavigation) { Text(tr(language,"下一份","下一份","Next")) }
             if (review != null) {
                 var more by remember { mutableStateOf(false) }
                 Box {
                     OutlinedButton(onClick = { more = true }, enabled = !state.busy) { Text(tr(language,"更多","更多","More")) }
                     DropdownMenu(more, { more = false }) {
-                        DropdownMenuItem(text = { Text(tr(language,"補頁／替換修訂","补页／替换修订","Create page revision")) }, onClick = { more = false; controller.perform { val draft = repositories.submissions.beginRevision(review.submission.id); controller.updateProjectUi(projectId) { it.copy(collectionDraftId = draft.id) }; navigate(WorkspaceSection.COLLECTION) } }, enabled = !state.busy && !guardNavigation)
-                        DropdownMenuItem(text = { Text(tr(language,"重試辨識","重试识别","Retry recognition")) }, onClick = { more = false; controller.perform { review.job?.let { repositories.intelligence.retryRecognition(it.id) } } }, enabled = !state.busy && review.job?.status in listOf(RecognitionJobStatus.FAILED, RecognitionJobStatus.PAUSED))
-                        DropdownMenuItem(text={Text(tr(language,"辨識設定","识别设置","Recognition settings"))},onClick={more=false;recognitionSettings=true},enabled=!state.busy && !guardNavigation)
-                        DropdownMenuItem(text={Text(tr(language,"以已確認設定重跑本份","以已确认设置重跑本份","Rerun with confirmed settings"))},onClick={more=false;rerunTargets=listOf(RecognitionRerunTarget(review.submission.id,review.revision.id,review.job?.id,review.template.id))},enabled=!state.busy && !guardNavigation && review.confirmation==null && imagesReady)
+                        DropdownMenuItem(text = { Text(tr(language,"補頁／替換修訂","补页／替换修订","Create page revision")) }, onClick = { more = false; controller.perform {requireNotNull(reviewGate).requireReady();val draft = repositories.submissions.beginRevision(review.submission.id); controller.updateProjectUi(projectId) { it.copy(collectionDraftId = draft.id) }; navigate(WorkspaceSection.COLLECTION) } }, enabled = !state.busy && !guardNavigation)
+                        DropdownMenuItem(text = { Text(tr(language,"重試辨識","重试识别","Retry recognition")) }, onClick = { more = false; controller.perform {requireNotNull(reviewGate).requireReady();review.job?.let { repositories.intelligence.retryRecognition(it.id) } } }, enabled = !state.busy && workspaceReady && review.job?.status in listOf(RecognitionJobStatus.FAILED, RecognitionJobStatus.PAUSED))
+                        DropdownMenuItem(text={Text(tr(language,"辨識設定","识别设置","Recognition settings"))},onClick={reviewGate?.run{more=false;recognitionSettings=true}},enabled=!state.busy && !guardNavigation)
+                        DropdownMenuItem(text={Text(tr(language,"以已確認設定重跑本份","以已确认设置重跑本份","Rerun with confirmed settings"))},onClick={reviewGate?.run{more=false;rerunTargets=listOf(RecognitionRerunTarget(review.submission.id,review.revision.id,review.job?.id,review.template.id))}},enabled=!state.busy && !guardNavigation && review.confirmation==null && imagesReady)
                     }
                 }
                 Button(onClick = {
+                    if(reviewGate?.ready!=true)return@Button
                     val invalid = unresolvedReviewTargets(review)
                     if (invalid.isNotEmpty()) invalidKeys = invalid else controller.perform {
+                        requireNotNull(reviewGate).requireReady()
                         try {
                             val buffers = review.targets.mapNotNull { target -> loadEditorField(answerEditorSession(review, target.key), "value")?.let { target.key to it } }.toMap()
                             val unsaved = dirtyReviewRecoveryTargets(review, buffers)
-                            val blocked = loadEditorField(answerRecoveryMarker(review.revision.id), "blocked")?.let { editorJson.fromJson(it, Array<AnswerRecoveryBlock>::class.java).toList() }.orEmpty().any { it.sourceVersion != (review.answers?.version ?: 0) }
+                            val blocked = loadAnswerRecoveryBlocks(review.revision.id).any { it.sourceVersion != (review.answers?.version ?: 0) }
                             if (unsaved.isNotEmpty()) {
                                 pendingRecoveryKeys = unsaved
                                 controller.updateProjectUi(projectId) { it.copy(reviewTargetKey = unsaved.first()) }
@@ -356,6 +386,7 @@ import java.time.format.DateTimeFormatter
                 }, enabled = !state.busy && !loading && imagesReady && !guardNavigation && review.confirmation == null) { Text(tr(language,"確認整份","确认整份","Confirm submission")) }
             }
         }
+        if(review!=null && !workspaceReady)LinearProgressIndicator(Modifier.fillMaxWidth())
         if (review == null) {
             if (loading) Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
             else EmptyState(tr(language,"無法打開這份問卷","无法打开这份问卷","Questionnaire unavailable"),
@@ -365,7 +396,10 @@ import java.time.format.DateTimeFormatter
         } else {
             if (editorDirty || pendingRecoveryKeys.isNotEmpty() || recoveryBlocks.isNotEmpty() || recoveryFailed) Row(Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.secondaryContainer).padding(12.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text(if (recoveryFailed) tr(language,"未能讀取編輯恢復資料。請重試後才確認。","未能读取编辑恢复资料。请重试后再确认。","Editor recovery could not be checked. Retry before confirming.") else if (recoveryBlocks.isNotEmpty()) tr(language,"先前的編輯輸入需要核對，原恢復資料已保留。","先前的编辑输入需要核对，原恢复资料已保留。","Earlier editor drafts need attention. Their original recovery data is retained.") else tr(language,"請先保存目前答案，再切換題目或確認整份。","请先保存当前答案，再切换题目或确认整份。","Save the current answer before changing targets or confirming."), Modifier.weight(1f), style = MaterialTheme.typography.bodySmall)
-                if (recoveryFailed) OutlinedButton(onClick = { recoveryRetry++ }, enabled = !state.busy) { Text(tr(language,"重試","重试","Retry")) }
+                if (recoveryFailed) {
+                    OutlinedButton(onClick = { recoveryRetry++ }, enabled = !state.busy) { Text(tr(language,"重試","重试","Retry")) }
+                    if(corruptMarkerRaw!=null)OutlinedButton(onClick={showCorruptMarker=true},enabled=!state.busy){Text(tr(language,"查看恢復索引","查看恢复索引","View recovery index"))}
+                }
                 else if (recoveryBlocks.isNotEmpty()) OutlinedButton(onClick = { showRecovery = true }, enabled = !state.busy) { Text(tr(language,"查看恢復輸入","查看恢复输入","View recovered drafts")) }
                 else Button(onClick = { saveCurrent?.invoke() }, enabled = !state.busy && imagesReady && saveCurrent != null) { Text(tr(language,"保存目前答案","保存当前答案","Save current answer")) }
             }
@@ -377,7 +411,7 @@ import java.time.format.DateTimeFormatter
                     LazyColumn(Modifier.weight(1f), contentPadding = PaddingValues(8.dp)) { items(review.targets, key = { it.key }) { item ->
                         val answer = review.answers?.answers?.firstOrNull { it.targetKey == item.key }
                         val complete = answer?.let { ReviewTargets.valid(it, item) } == true || item.question?.pageId in review.revision.missingTemplatePageIds
-                        Surface(color = if (target?.key == item.key) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface, shape = RoundedCornerShape(8.dp), modifier = Modifier.fillMaxWidth().padding(bottom = 4.dp).clickable(enabled = !state.busy && !guardNavigation) { controller.updateProjectUi(projectId) { it.copy(reviewTargetKey = item.key) } }) {
+                        Surface(color = if (target?.key == item.key) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface, shape = RoundedCornerShape(8.dp), modifier = Modifier.fillMaxWidth().padding(bottom = 4.dp).clickable(enabled = !state.busy && !guardNavigation) {reviewGate?.run{controller.updateProjectUi(projectId){it.copy(reviewTargetKey=item.key)}}}) {
                             Row(Modifier.padding(10.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                 Text(if (complete) "✓" else "○", color = if (complete) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
                                 Text(item.title, maxLines = 3, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.bodyMedium)
@@ -398,13 +432,19 @@ import java.time.format.DateTimeFormatter
             }, inspector = {
                 if (target != null) {
                     val index = review.targets.indexOf(target)
-                    AnswerEditor(controller, review, target, review.job?.observations?.firstOrNull { it.targetKey == target.key }, language, state.busy, imagesReady,
+                    val targetGate=ReviewEditGate {
+                        val targets=workspace?.targets.orEmpty()
+                        val selectedKey=controller.ui.value.projects[projectId]?.reviewTargetKey
+                        val liveTarget=targets.firstOrNull {it.key==selectedKey} ?: targets.firstOrNull()
+                        reviewGate?.ready==true && liveTarget?.key==target.key
+                    }
+                    AnswerEditor(controller, review, target, review.job?.observations?.firstOrNull { it.targetKey == target.key }, language, state.busy || !targetGate.ready, imagesReady,targetGate,
                         previous = if (guardNavigation) null else review.targets.getOrNull(index - 1)?.let { item -> { controller.updateProjectUi(projectId) { it.copy(reviewTargetKey = item.key) } } },
                         next = if (guardNavigation) null else review.targets.getOrNull(index + 1)?.let { item -> { controller.updateProjectUi(projectId) { it.copy(reviewTargetKey = item.key) } } },
                         position = "${index + 1} / ${review.targets.size}", onDirtyChanged = { dirty ->
                             editorDirty = dirty
                             if (dirty) pendingRecoveryKeys = (pendingRecoveryKeys + target.key).distinct()
-                        }, onSaveAction = { saveCurrent = it },selectedEvidenceOptionId=ui.recognitionOptionId,onSelectEvidence={id->controller.updateProjectUi(projectId){it.copy(recognitionOptionId=id)}}) {
+                        }, onSaveAction = { saveCurrent = it },selectedEvidenceOptionId=ui.recognitionOptionId,onSelectEvidence={id->controller.updateProjectUi(projectId){it.copy(recognitionOptionId=id)}},onRecoveryDiscarded={recoveryRetry++}) {
                         reload++; controller.updateProjectUi(projectId) { it.copy(reviewTargetKey = review.targets.getOrNull(index + 1)?.key ?: target.key) }
                     }
                 } else EmptyState(tr(language,"沒有覆核欄位","没有复核字段","No review fields"), tr(language,"此範本沒有需要覆核的題目或人工欄位。","此模板没有需要复核的题目或人工字段。","This template has no questions or manual fields to review."))
@@ -432,6 +472,19 @@ import java.time.format.DateTimeFormatter
             clearEditor(answerRecoveryMarker(review.revision.id)); showRecovery = false; recoveryRetry++
         } }, enabled = !state.busy) { Text(tr(language,"放棄以上恢復草稿","放弃以上恢复草稿","Discard these drafts")) } },
         dismissButton = { TextButton(onClick = { showRecovery = false }) { Text(tr(language,"繼續保留","继续保留","Keep drafts")) } })
+    val corruptRaw=corruptMarkerRaw
+    if(showCorruptMarker && review!=null && corruptRaw!=null)AlertDialog(onDismissRequest={showCorruptMarker=false},
+        title={Text(tr(language,"無法解析的恢復索引","无法解析的恢复索引","Unreadable recovery index"))},
+        text={Column(Modifier.heightIn(max=360.dp).verticalScroll(rememberScrollState()),verticalArrangement=Arrangement.spacedBy(12.dp)) {
+            Text(tr(language,"以下加密恢復索引的格式不完整，尚未自動套用或刪除。可複製內容後，明確放棄這份索引並重新檢查目前答案草稿。無法從索引確定位置的其他恢復欄位仍保留；已保存答案不受影響。","以下加密恢复索引的格式不完整，尚未自动应用或删除。可复制内容后，明确放弃这份索引并重新检查当前答案草稿。无法从索引确定位置的其他恢复字段仍保留；已保存答案不受影响。","This encrypted recovery index is incomplete and has been retained. Copy its contents before explicitly discarding this index and checking current answer drafts again. Other recovery fields whose locations cannot be read from the index are retained. Saved answers remain unchanged."))
+            SelectionContainer {Text(corruptRaw,style=MaterialTheme.typography.bodySmall)}
+        }},
+        confirmButton={Button(onClick={controller.perform {
+            requireNotNull(reviewGate).requireReady()
+            discardCorruptAnswerRecoveryMarker(review.revision.id,corruptRaw)
+            corruptMarkerRaw=null;showCorruptMarker=false;recoveryRetry++
+        }},enabled=!state.busy && workspaceReady){Text(tr(language,"放棄此索引並重新檢查","放弃此索引并重新检查","Discard index and check again"))}},
+        dismissButton={TextButton(onClick={showCorruptMarker=false}){Text(tr(language,"繼續保留","继续保留","Keep recovery"))}})
 }
 
 /** Matches confirmation's safe-candidate resolution; the repository remains authoritative. */
@@ -449,15 +502,14 @@ internal fun initialReviewAnswer(review: ReviewWorkspace, target: AnswerTarget):
     else review.answers?.answers?.firstOrNull { it.targetKey == target.key } ?: AnswerValue(target.key)
 
 internal fun answerEditorSession(review: ReviewWorkspace, targetKey: String, version: Int = review.answers?.version ?: 0) = "answer:${review.revision.id}:$targetKey:$version"
-private fun answerRecoveryMarker(revisionId: String) = "answer-recovery:$revisionId"
+internal fun answerRecoveryMarker(revisionId: String) = "answer-recovery:$revisionId"
 internal data class AnswerRecoveryBlock(val targetKey: String, val sourceVersion: Int)
 internal data class AnswerRecoveryCarryForward(val copies: Map<String, String>, val blockedKeys: List<String>)
 
 /** Recovery buffers are drafts. Inspecting or carrying one never applies it as an answer. */
 internal fun dirtyReviewRecoveryTargets(review: ReviewWorkspace, raw: Map<String, String>): List<String> = review.targets.filter { target ->
     raw[target.key]?.let { serialized ->
-        val value = requireNotNull(editorJson.fromJson(serialized, AnswerValue::class.java))
-        require(value.targetKey == target.key) { "RECOVERY_TARGET_CHANGED" }
+        val value = decodeAnswerRecovery(serialized,target.key)
         value != initialReviewAnswer(review, target)
     } ?: false
 }.map { it.key }
@@ -469,25 +521,28 @@ internal fun planAnswerRecoveryCarryForward(before: ReviewWorkspace, after: Answ
     return AnswerRecoveryCarryForward(pending.filterKeys { it in unchanged }, pending.keys.filterNot { it in unchanged })
 }
 
-@Composable private fun AnswerEditor(controller: Controller, review: ReviewWorkspace, target: AnswerTarget, observation: FieldObservation?, language: UiLanguage, busy: Boolean, imagesReady: Boolean, previous: (() -> Unit)?, next: (() -> Unit)?, position: String, onDirtyChanged: (Boolean) -> Unit, onSaveAction: ((() -> Unit) -> Unit),selectedEvidenceOptionId:String?,onSelectEvidence:(String)->Unit, afterSave: () -> Unit) {
+@Composable private fun AnswerEditor(controller: Controller, review: ReviewWorkspace, target: AnswerTarget, observation: FieldObservation?, language: UiLanguage, busy: Boolean, imagesReady: Boolean,editGate:ReviewEditGate, previous: (() -> Unit)?, next: (() -> Unit)?, position: String, onDirtyChanged: (Boolean) -> Unit, onSaveAction: ((() -> Unit) -> Unit),selectedEvidenceOptionId:String?,onSelectEvidence:(String)->Unit,onRecoveryDiscarded:()->Unit, afterSave: () -> Unit) {
     val existing = review.answers?.answers?.firstOrNull { it.targetKey == target.key }
     val missing = target.question?.pageId in review.revision.missingTemplatePageIds
     val initial = initialReviewAnswer(review, target)
     val session = answerEditorSession(review, target.key)
-    var value by encryptedState(controller, session, review.project.project.id, "value", initial, { editorJson.fromJson(it, AnswerValue::class.java) }, { editorJson.toJson(it) })
+    val valueField=recoverableEncryptedState(controller,session,review.project.project.id,"value",initial,{decodeAnswerRecovery(it,target.key)},{editorJson.toJson(it)})
+    var value by valueField
     var details by remember(target.key) { mutableStateOf(false) }
     val save: () -> Unit = { controller.perform {
+        editGate.requireReady()
+        val latestAnswer=answerEditorValue(valueField,target.key)
         val pending = review.targets.filterNot { it.key == target.key }.mapNotNull { other -> loadEditorField(answerEditorSession(review, other.key), "value")?.let { other.key to it } }.toMap()
         val dirtyKeys = dirtyReviewRecoveryTargets(review, pending)
         val marker = answerRecoveryMarker(review.revision.id)
         val oldVersion = review.answers?.version ?: 0
-        val prior = loadEditorField(marker, "blocked")?.let { editorJson.fromJson(it, Array<AnswerRecoveryBlock>::class.java).toList() }.orEmpty()
+        val prior = loadAnswerRecoveryBlocks(review.revision.id)
         // Persist the source locations first, so a crash after the answer save cannot hide them.
         if (dirtyKeys.isNotEmpty()) {
             queueEditorField(marker, review.project.project.id, "blocked", editorJson.toJson((prior + dirtyKeys.map { AnswerRecoveryBlock(it, oldVersion) }).distinct()))
             flushEdits()
         }
-        val saved = saveAnswer(review, value.copy(humanEdited = true))
+        val saved = saveAnswer(review, latestAnswer)
         val plan = planAnswerRecoveryCarryForward(review, saved, pending.filterKeys { it in dirtyKeys })
         plan.copies.forEach { (key, raw) -> queueEditorField(answerEditorSession(review, key, saved.version), review.project.project.id, "value", raw) }
         // Keep every source recovery buffer if this encrypted flush fails.
@@ -502,8 +557,15 @@ internal fun planAnswerRecoveryCarryForward(before: ReviewWorkspace, after: Answ
     } }
     val latestSave by rememberUpdatedState(save)
     val registeredSave = remember(session) { { latestSave() } }
-    SideEffect { onDirtyChanged(!missing && value != initial); onSaveAction(registeredSave) }
-    RegisterSaveAction(!missing && !busy && imagesReady, save)
+    // Parent recovery scanning guards navigation independently. Loading is not an answer edit:
+    // marking it dirty would leave a phantom pending target after an identical restore.
+    SideEffect { onDirtyChanged(!missing && valueField.ready && value != initial); onSaveAction(registeredSave) }
+    RegisterSaveAction(!missing && !busy && imagesReady && valueField.ready, save)
+    if(!valueField.ready) {
+        RecoveryFieldsProblem(EditorRecoveryFields(valueField),controller,session,language,onRecoveryDiscarded,beforeDiscard={editGate.requireReady()})
+        return
+    }
+    CompositionLocalProvider(LocalEditorEnabled provides (LocalEditorEnabled.current && !busy)) {
     Column(Modifier.fillMaxSize()) {
         Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
             PanelHeading(target.title, position)
@@ -517,7 +579,7 @@ internal fun planAnswerRecoveryCarryForward(before: ReviewWorkspace, after: Answ
                         Column(Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             Text(tr(language,"機器候選 · 未確認","机器候选 · 未确认","Machine candidate · unconfirmed"), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             Text(observation.candidate?.let { candidate -> candidate.text.ifEmpty { candidate.optionIds.joinToString { id -> target.question?.options?.firstOrNull { it.id == id }?.title ?: id } } }?.ifBlank { "—" } ?: "—")
-                            observation.candidate?.let { candidate -> OutlinedButton(onClick = { value = candidate.copy(source = AnswerSource.MACHINE_ACCEPTED, humanEdited = true) }, enabled = !busy && usableCandidate(observation,review.job)) { Text(tr(language,"採用候選","采用候选","Use candidate")) } }
+                            observation.candidate?.let { candidate -> OutlinedButton(onClick = {editGate.edit(controller,valueField){candidate.copy(source=AnswerSource.MACHINE_ACCEPTED,humanEdited=true)}}, enabled = !busy && usableCandidate(observation,review.job)) { Text(tr(language,"採用候選","采用候选","Use candidate")) } }
                             if(observation.provenance==RecognitionProvenance.LEGACY_UNBOUND || observation.candidate?.let {it.candidateRef==null}==true)Text(tr(language,"舊候選未綁定辨識版本；可人工輸入或先重新辨識。","旧候选未绑定识别版本；可人工输入或先重新识别。","This candidate has no version binding. Enter a human answer or rerun recognition."),style=MaterialTheme.typography.bodySmall)
                             if (observation.requiresReview) Text(tr(language,"需要人工核對後保存","需要人工核对后保存","Check this candidate before saving"), style = MaterialTheme.typography.bodySmall)
                         }
@@ -525,18 +587,18 @@ internal fun planAnswerRecoveryCarryForward(before: ReviewWorkspace, after: Answ
                 }
                 if(observation!=null)OptionEvidenceList(observation,listOfNotNull(target.question),selectedEvidenceOptionId,language,onSelectEvidence)
                 Text(tr(language,"人工答案","人工答案","Reviewed answer"), style = MaterialTheme.typography.titleSmall)
-                EnumChoice(tr(language,"答案狀態","答案状态","Answer state"), AnswerState.entries.filterNot { it == AnswerState.NOT_CAPTURED }, value.state, { value = value.copy(state = it, text = "", optionIds = emptyList(), source = AnswerSource.MANUAL, humanEdited = true,candidateRef=null) }, language)
+                EnumChoice(tr(language,"答案狀態","答案状态","Answer state"), AnswerState.entries.filterNot { it == AnswerState.NOT_CAPTURED }, value.state, {selected->editGate.edit(controller,valueField){it.copy(state=selected,text="",optionIds=emptyList(),source=AnswerSource.MANUAL,humanEdited=true,candidateRef=null)}}, language)
                 if (value.state == AnswerState.VALUE) {
                     val question = target.question
                     if (question?.type in listOf(QuestionType.SINGLE_CHOICE, QuestionType.MULTIPLE_CHOICE)) question!!.options.forEach { option ->
                         val selected = option.id in value.optionIds
                         Row(Modifier.fillMaxWidth().clickable(enabled = !busy) {
-                            value = value.copy(optionIds = if (question.type == QuestionType.SINGLE_CHOICE) listOf(option.id) else if (selected) value.optionIds - option.id else value.optionIds + option.id, text = "", source = AnswerSource.MANUAL, humanEdited = true,candidateRef=null)
+                            editGate.edit(controller,valueField){current->current.copy(optionIds=if(question.type==QuestionType.SINGLE_CHOICE)listOf(option.id) else if(option.id in current.optionIds)current.optionIds-option.id else current.optionIds+option.id,text="",source=AnswerSource.MANUAL,humanEdited=true,candidateRef=null)}
                         }, verticalAlignment = Alignment.CenterVertically) {
                             if (question.type == QuestionType.SINGLE_CHOICE) RadioButton(selected, null) else Checkbox(selected, null)
                             Text(option.title + " (${option.code})", Modifier.padding(start = 8.dp))
                         }
-                    } else Field(if (question?.type == QuestionType.DATE) tr(language,"日期 YYYY-MM-DD","日期 YYYY-MM-DD","Date YYYY-MM-DD") else tr(language,"答案","答案","Answer"), value.text, { value = value.copy(text = it, source = AnswerSource.MANUAL, humanEdited = true,candidateRef=null) }, false)
+                    } else Field(if (question?.type == QuestionType.DATE) tr(language,"日期 YYYY-MM-DD","日期 YYYY-MM-DD","Date YYYY-MM-DD") else tr(language,"答案","答案","Answer"), value.text, {entered->editGate.edit(controller,valueField){it.copy(text=entered,source=AnswerSource.MANUAL,humanEdited=true,candidateRef=null)}}, false)
                 }
                 Text(tr(language,"可以保存未完成的輸入；整份確認時檢查所有答案。","可以保存未完成的输入；整份确认时检查所有答案。","You can save incomplete input. Confirmation checks every answer."), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
@@ -554,10 +616,11 @@ internal fun planAnswerRecoveryCarryForward(before: ReviewWorkspace, after: Answ
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             if (!missing) Button(onClick = save, enabled = !busy && imagesReady, modifier = Modifier.fillMaxWidth()) { Text(tr(language,"保存並下一題","保存并下一题","Save and next")) }
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedButton(onClick = { previous?.invoke() }, enabled = previous != null && !busy, modifier = Modifier.weight(1f)) { Text(tr(language,"上一題","上一题","Previous")) }
-                OutlinedButton(onClick = { next?.invoke() }, enabled = next != null && !busy, modifier = Modifier.weight(1f)) { Text(tr(language,"下一題","下一题","Next")) }
+                OutlinedButton(onClick = {if(!controller.state.value.busy)editGate.run{previous?.invoke()}}, enabled = previous != null && !busy, modifier = Modifier.weight(1f)) { Text(tr(language,"上一題","上一题","Previous")) }
+                OutlinedButton(onClick = {if(!controller.state.value.busy)editGate.run{next?.invoke()}}, enabled = next != null && !busy, modifier = Modifier.weight(1f)) { Text(tr(language,"下一題","下一题","Next")) }
             }
         }
+    }
     }
 }
 
@@ -567,28 +630,45 @@ internal fun planAnswerRecoveryCarryForward(before: ReviewWorkspace, after: Answ
     val desktopUi by controller.ui.collectAsState()
     val ui = desktopUi.projects[projectId] ?: ProjectUiState()
     val session = "output:$projectId:${project.output.version}"
-    var headerLanguage by encryptedState(controller, session, projectId, "language", project.output.language, { OutputHeaderLanguage.valueOf(it) }, { it.name })
-    var personal by encryptedState(controller, session, projectId, "personal", project.output.includePersonalIdentifiers, { it.toBooleanStrict() }, { it.toString() })
-    var policies by encryptedState(controller, session, projectId, "policies", state.policies, { editorJson.fromJson(it, Array<OutputFieldPolicy>::class.java).toList() }, { editorJson.toJson(it) })
-    var layout by encryptedState(controller, session, projectId, "layout", project.output.columnLayout, { editorJson.fromJson(it, Array<OutputColumnLayout>::class.java).toList() }, { editorJson.toJson(it) })
+    val languageField=recoverableEncryptedState(controller,session,projectId,"language",project.output.language,{OutputHeaderLanguage.valueOf(it)},{it.name})
+    val personalField=recoverableEncryptedState(controller,session,projectId,"personal",project.output.includePersonalIdentifiers,{it.toBooleanStrict()},{it.toString()})
+    val policiesField=recoverableEncryptedState(controller,session,projectId,"policies",state.policies,{decodeOutputPolicies(it,projectId)},{editorJson.toJson(it)})
+    val layoutField=recoverableEncryptedState(controller,session,projectId,"layout",project.output.columnLayout,::decodeOutputLayout,{editorJson.toJson(it)})
+    val recovery=EditorRecoveryFields(languageField,personalField,policiesField,layoutField)
+    var headerLanguage by languageField;var personal by personalField;var policies by policiesField;var layout by layoutField
     var includeUnresolved by remember(projectId) { mutableStateOf(false) }
     var newSnapshot by remember(projectId) { mutableStateOf<ExportSnapshot?>(null) }
     var fieldsTab by remember(projectId) { mutableStateOf(0) }
     val searchFocus = remember { FocusRequester() }
+    if(!recovery.ready) {
+        Column(Modifier.fillMaxSize()) {
+            WorkspaceToolbar(tr(language,"Excel 匯出","Excel 导出","Export to Excel")) {}
+            RecoveryFieldsProblem(recovery,controller,session,language)
+        }
+        return
+    }
     if (ui.exportTab == 1) RegisterSearchAction { searchFocus.requestFocus() }
     val targets = state.template?.let { ReviewTargets.build(project, it) }.orEmpty()
     val preview = TemplateColumns.build(project.copy(output = project.output.copy(language = headerLanguage, includePersonalIdentifiers = personal, columnLayout = layout)), state.template?.document, policies)
     val dirty = headerLanguage != project.output.language || personal != project.output.includePersonalIdentifiers || policies != state.policies || layout != project.output.columnLayout
     val save: () -> Unit = { controller.perform {
-        repositories.projects.saveOutputConfiguration(project.copy(output = project.output.copy(language = headerLanguage, includePersonalIdentifiers = personal, columnLayout = layout)), policies, project.output.version)
+        val current=outputEditorValues(languageField,personalField,policiesField,layoutField)
+        repositories.projects.saveOutputConfiguration(project.copy(output=project.output.copy(language=current.language,includePersonalIdentifiers=current.personal,columnLayout=current.layout)),current.policies,project.output.version)
         clearEditor(session)
     } }
+    fun moveColumn(key:String,direction:Int) = controller.editIfAvailable(layoutField) {currentLayout->
+        val current=outputEditorValues(languageField,personalField,policiesField,layoutField)
+        val columns=TemplateColumns.build(project.copy(output=project.output.copy(language=current.language,includePersonalIdentifiers=current.personal,columnLayout=currentLayout)),state.template?.document,current.policies)
+        moveOutputColumn(currentLayout,columns,key,direction)
+    }
     RegisterSaveAction(dirty && !state.busy, save)
     Column(Modifier.fillMaxSize()) {
         WorkspaceToolbar(tr(language,"Excel 匯出","Excel 导出","Export to Excel"), tr(language,"設定欄位與隱私，建立固定的四表快照。","设置字段和隐私，创建固定的四表快照。","Configure fields and privacy, then freeze a four-sheet snapshot.")) {
             Button(onClick = { controller.perform {
-                if (dirty) {
-                    repositories.projects.saveOutputConfiguration(project.copy(output = project.output.copy(language = headerLanguage, includePersonalIdentifiers = personal, columnLayout = layout)), policies, project.output.version)
+                val current=outputEditorValues(languageField,personalField,policiesField,layoutField)
+                val changed=current.language!=project.output.language || current.personal!=project.output.includePersonalIdentifiers || current.policies!=state.policies || current.layout!=project.output.columnLayout
+                if (changed) {
+                    repositories.projects.saveOutputConfiguration(project.copy(output=project.output.copy(language=current.language,includePersonalIdentifiers=current.personal,columnLayout=current.layout)),current.policies,project.output.version)
                     clearEditor(session)
                 }
                 newSnapshot = export(projectId, includeUnresolved)
@@ -618,8 +698,8 @@ internal fun planAnswerRecoveryCarryForward(before: ReviewWorkspace, after: Answ
                                     Text(target.title, maxLines = 2, overflow = TextOverflow.Ellipsis)
                                     if (policy.personalIdentifier && !personal && policy.exportIncluded) Text(tr(language,"隱私設定會排除此欄位","隐私设置会排除此字段","Excluded by the privacy setting"), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
-                                Box(Modifier.width(90.dp), contentAlignment = Alignment.CenterStart) { Checkbox(policy.exportIncluded, { included -> policies = policies.filterNot { it.targetKey == target.key } + policy.copy(exportIncluded = included) }, enabled = !state.busy) }
-                                Box(Modifier.width(120.dp), contentAlignment = Alignment.CenterStart) { Checkbox(policy.personalIdentifier, { private -> policies = policies.filterNot { it.targetKey == target.key } + policy.copy(personalIdentifier = private) }, enabled = !state.busy) }
+                                Box(Modifier.width(90.dp), contentAlignment = Alignment.CenterStart) { Checkbox(policy.exportIncluded, {included->controller.editIfAvailable(policiesField){current->current.filterNot {it.targetKey==target.key}+(current.firstOrNull {it.targetKey==target.key} ?: policy).copy(exportIncluded=included)}}, enabled = !state.busy) }
+                                Box(Modifier.width(120.dp), contentAlignment = Alignment.CenterStart) { Checkbox(policy.personalIdentifier, {private->controller.editIfAvailable(policiesField){current->current.filterNot {it.targetKey==target.key}+(current.firstOrNull {it.targetKey==target.key} ?: policy).copy(personalIdentifier=private)}}, enabled = !state.busy) }
                             }
                             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = .55f))
                         } }
@@ -640,13 +720,13 @@ internal fun planAnswerRecoveryCarryForward(before: ReviewWorkspace, after: Answ
                                     Text(column.title, Modifier.weight(1f))
                                     StatusLabel(tr(language,"固定","固定","Locked"), false)
                                 } else OutlinedTextField(layout.firstOrNull { it.key == column.key }?.titleOverride ?: column.title,
-                                    { title -> layout = layout.filterNot { it.key == column.key } + OutputColumnLayout(column.key, title, layout.firstOrNull { it.key == column.key }?.position ?: preview.filterNot { it.key in fixedOutputKeys }.indexOf(column)) },
+                                    {title->controller.editIfAvailable(layoutField){current->current.filterNot {it.key==column.key}+OutputColumnLayout(column.key,title,current.firstOrNull {it.key==column.key}?.position ?: preview.filterNot {it.key in fixedOutputKeys}.indexOf(column))}},
                                     singleLine = true, enabled = !state.busy, modifier = Modifier.weight(1f))
                                 Row(Modifier.width(100.dp)) {
                                     val data = preview.filterNot { it.key in fixedOutputKeys }
                                     val dataIndex = data.indexOfFirst { it.key == column.key }
-                                    TextButton(onClick = { layout = moveOutputColumn(layout, preview, column.key, -1) }, enabled = !state.busy && !locked && dataIndex > 0, contentPadding = PaddingValues(0.dp), modifier = Modifier.width(46.dp)) { Text("↑") }
-                                    TextButton(onClick = { layout = moveOutputColumn(layout, preview, column.key, 1) }, enabled = !state.busy && !locked && dataIndex >= 0 && dataIndex < data.lastIndex, contentPadding = PaddingValues(0.dp), modifier = Modifier.width(46.dp)) { Text("↓") }
+                                    TextButton(onClick = {moveColumn(column.key,-1)}, enabled = !state.busy && !locked && dataIndex > 0, contentPadding = PaddingValues(0.dp), modifier = Modifier.width(46.dp)) { Text("↑") }
+                                    TextButton(onClick = {moveColumn(column.key,1)}, enabled = !state.busy && !locked && dataIndex >= 0 && dataIndex < data.lastIndex, contentPadding = PaddingValues(0.dp), modifier = Modifier.width(46.dp)) { Text("↓") }
                                 }
                             }
                         } }
@@ -687,15 +767,15 @@ internal fun planAnswerRecoveryCarryForward(before: ReviewWorkspace, after: Answ
                 }
                 else -> Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(24.dp), verticalArrangement = Arrangement.spacedBy(20.dp)) {
                     PanelHeading(tr(language,"標題語言","标题语言","Header language"), tr(language,"不翻譯題目或答案。","不翻译题目或答案。","Question and answer text is never translated."))
-                    EnumChoice(tr(language,"Excel 標題語言","Excel 标题语言","Excel header language"), OutputHeaderLanguage.entries, headerLanguage, { headerLanguage = it }, language)
+                    EnumChoice(tr(language,"Excel 標題語言","Excel 标题语言","Excel header language"), OutputHeaderLanguage.entries, headerLanguage, {selected->controller.editIfAvailable(languageField){selected}}, language)
                     HorizontalDivider()
                     PanelHeading(tr(language,"隱私","隐私","Privacy"))
-                    CheckLine(personal, { personal = it }, tr(language,"允許匯出個人標識與紙面編號","允许导出个人标识和纸面编号","Allow personal identifiers and Paper ID"))
+                    CheckLine(personal, {selected->controller.editIfAvailable(personalField){selected}}, tr(language,"允許匯出個人標識與紙面編號","允许导出个人标识和纸面编号","Allow personal identifiers and Paper ID"))
                     Text(tr(language,"關閉時，四張工作表一致排除標記為個人標識的欄位及紙面編號。","关闭时，四张工作表一致排除标记为个人标识的字段和纸面编号。","When disabled, all four sheets exclude fields marked as personal identifiers and the Paper ID."), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     HorizontalDivider()
                     PanelHeading(tr(language,"包含哪些問卷","包含哪些问卷","Questionnaire inclusion"))
                     Text(tr(language,"預設只包含影像準備完成、頁面完整且整份確認的問卷。","默认只包含图像准备完成、页面完整且整份确认的问卷。","By default, include only prepared, complete and confirmed questionnaires."))
-                    CheckLine(includeUnresolved, { includeUnresolved = it }, tr(language,"包含未決或缺頁問卷，附狀態標記","包含未决或缺页问卷，附状态标记","Include unresolved or incomplete questionnaires, with status flags"))
+                    CheckLine(includeUnresolved, {if(!controller.state.value.busy)includeUnresolved=it}, tr(language,"包含未決或缺頁問卷，附狀態標記","包含未决或缺页问卷，附状态标记","Include unresolved or incomplete questionnaires, with status flags"))
                     HorizontalDivider()
                     PanelHeading(tr(language,"四張工作表","四张工作表","Four linked sheets"))
                     Text(tr(language,"答案、問卷摘要、品質與覆核、欄位字典。","答案、问卷摘要、质量和复核、字段字典。","Answers, questionnaire summary, quality and review, and field dictionary."))

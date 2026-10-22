@@ -41,6 +41,8 @@ data class DesktopUiState(
     val projects: Map<String, ProjectUiState> = emptyMap(),
     val projectSearch: String = "", val projectSort: String = "UPDATED",
     val projectSortAscending: Boolean = false,
+    val taskSearch: String = "", val taskFilter: String = "PENDING",
+    val taskPageIndex: Int = 0, val taskPageSize: Int = 50,
 )
 
 data class UiTaskSummary(
@@ -93,7 +95,11 @@ internal object DesktopUiCodec {
                 projectId = json.text("projectId"), sidebarExpanded = json.bool("sidebarExpanded", true),
                 projects = projects, projectSearch = json.text("projectSearch") ?: "",
                 projectSort = json.text("projectSort") ?: "UPDATED",
-                projectSortAscending = json.bool("projectSortAscending", false))
+                projectSortAscending = json.bool("projectSortAscending", false),
+                taskSearch = json.text("taskSearch") ?: "",
+                taskFilter = json.text("taskFilter")?.takeIf { it in setOf("PENDING","FAILED","COMPLETED","ALL") } ?: "PENDING",
+                taskPageIndex = json.int("taskPageIndex",0).coerceAtLeast(0),
+                taskPageSize = json.int("taskPageSize",50).takeIf { it in 1..100 } ?: 50)
         }.getOrDefault(DesktopUiState())
     }
     private inline fun <reified T : Enum<T>> enumValue(value: String?, default: T): T = enumValues<T>().firstOrNull { it.name == value } ?: default

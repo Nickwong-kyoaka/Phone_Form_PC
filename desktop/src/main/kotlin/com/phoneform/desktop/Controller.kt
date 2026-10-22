@@ -7,6 +7,7 @@ import com.phoneform.desktop.data.DesktopUiPreferencesStore
 import com.phoneform.desktop.security.*
 import com.phoneform.desktop.vision.DesktopVision
 import com.phoneform.desktop.vision.RecognitionResult
+import androidx.compose.ui.graphics.toComposeImageBitmap
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.*
@@ -57,7 +58,9 @@ class Controller(val workspace: SecureWorkspace, val modelDir: Path, startWorker
     private val workerLock = Mutex()
     private val renderLock = Any()
     private val pageOwners = java.util.concurrent.ConcurrentHashMap<String, String>()
+    private val displayImages = DisplayImageLoader(::validateDisplayImageRequest)
     private val actions = Mutex()
+    private val actionAdmission = Any()
     @Volatile private var closing = false
     @Volatile private var templateCommit: Pair<String, suspend () -> Unit>? = null
     fun registerTemplateCommit(owner: String, commit: suspend () -> Unit) { templateCommit = owner to commit }
@@ -163,14 +166,42 @@ class Controller(val workspace: SecureWorkspace, val modelDir: Path, startWorker
         updateProjectUi(id) { it.copy(reviewPageIndex = pageIndex.coerceAtLeast(0),
             reviewSubmissionId = if (it.reviewWorkspace) it.reviewSubmissionId else null) }
     }
-    fun retryTask(id: String) = perform {
-        val task = tasks.value.firstOrNull { it.id == id && it.retrySupported } ?: error("TASK_RETRY_UNAVAILABLE")
-        when (task.phase) {
-            "IMAGE" -> repositories.imageProcessing.retry(id)
-            "PREPARATION" -> repositories.submissions.retryJob(id)
-            "RECOGNITION" -> repositories.intelligence.retryRecognition(id)
-            else -> error("TASK_RETRY_UNAVAILABLE")
+    fun retryTask(id: String) {
+        val phase = tasks.value.firstOrNull { it.id == id }?.phase?.let(BackgroundTaskPhase::valueOf) ?: return
+        retryTask(id, phase)
+    }
+    fun retryTask(id: String, phase: BackgroundTaskPhase) = perform {
+        val task = repositories.getTaskSummary(id, phase) ?: error("TASK_RETRY_UNAVAILABLE")
+        require(task.retrySupported) { "TASK_RETRY_UNAVAILABLE" }
+        when (phase) {
+            BackgroundTaskPhase.IMAGE -> repositories.imageProcessing.retry(id)
+            BackgroundTaskPhase.PREPARATION -> repositories.submissions.retryJob(id)
+            BackgroundTaskPhase.RECOGNITION -> repositories.intelligence.retryRecognition(id)
         }
+    }
+    /** The task page is a read snapshot. Revalidate its owner before changing navigation. */
+    suspend fun openTaskQuestionnaire(id: String, phase: BackgroundTaskPhase) {
+        val task = repositories.getTaskSummary(id, phase) ?: error("TASK_RETRY_UNAVAILABLE")
+        val draft = task.collectionDraftId?.let { repositories.submissions.getDraft(it) }
+        val slot = if (task.collectionDraftId != null) {
+            requireNotNull(draft) { "TASK_OWNER_UNAVAILABLE" }
+            require(draft.projectId == task.projectId) { "TASK_OWNER_UNAVAILABLE" }
+            requireNotNull(draft.pages.firstOrNull { it.image.id == task.pageId }) { "TASK_OWNER_UNAVAILABLE" }.templatePageId
+        } else {
+            val submissionId = requireNotNull(task.submissionId) { "TASK_OWNER_UNAVAILABLE" }
+            requireNotNull(repositories.intelligence.getReviewSummary(submissionId)) { "TASK_OWNER_UNAVAILABLE" }
+            null
+        }
+        flushEdits()
+        selectedProjectId = task.projectId
+        mutableUi.update { old ->
+            val before=old.projects[task.projectId] ?: ProjectUiState()
+            val location=if(draft!=null)before.copy(collectionDraftId=draft.id,collectionPageId=slot)
+                else before.copy(reviewSubmissionId=task.submissionId,reviewTargetKey=null,reviewWorkspace=true)
+            old.copy(projectId=task.projectId,section=if(draft!=null)WorkspaceSection.COLLECTION else WorkspaceSection.REVIEW,
+                projects=old.projects+(task.projectId to location))
+        }
+        scheduleUiSave()
     }
     init {
         // ImageIO's default disk cache can contain decrypted questionnaire pixels.
@@ -229,15 +260,18 @@ class Controller(val workspace: SecureWorkspace, val modelDir: Path, startWorker
             }
         }
     }
-    fun perform(action: suspend Controller.() -> Unit) {
-        if (mutable.value.busy || closing) return
-        scope.launch {
-            mutable.update { it.copy(busy = true, error = null, notice = null) }
-            try { actions.withLock { action(); refresh() } }
+    fun perform(action: suspend Controller.() -> Unit) = synchronized(actionAdmission) {
+        if (mutable.value.busy || closing) return@synchronized
+        // Claim synchronously: a second click before the IO coroutine starts is still a duplicate.
+        mutable.update { it.copy(busy = true, error = null, notice = null) }
+        val job = scope.launch {
+            try { actions.withLock { if (!closing) { action(); refresh() } } }
             catch (e: CancellationException) { throw e }
             catch (e: Exception) { mutable.update { it.copy(error = errorCode(e)) } }
-            finally { mutable.update { it.copy(busy = false) } }
         }
+        // Also runs if shutdown cancels a coroutine before its body ever starts.
+        job.invokeOnCompletion { synchronized(actionAdmission) { mutable.update { it.copy(busy = false) } } }
+        Unit
     }
     fun clearMessage() = mutable.update { it.copy(error = null, notice = null) }
     fun select(projectId: String?): Job = scope.launch {
@@ -454,25 +488,77 @@ class Controller(val workspace: SecureWorkspace, val modelDir: Path, startWorker
     private fun createPage(asset: SampleAsset, index: Int, position: Int, source: BufferedImage): SamplePage {
         require(source.width.toLong() * source.height <= 100_000_000) { "IMAGE_TOO_LARGE" }
         val id = newId(); val image = scaleBase(source)
-        ProjectOperationGate.shared.currentProjectId()?.let { pageOwners[id] = it }
-        val path = "pages/$id/base.png"; savePng(path, image)
-        val thumbnailPath = "pages/$id/thumb.png"; saveThumbnail(thumbnailPath, image)
-        return SamplePage(id, asset, index, position, path, thumbnailPath, image.width, image.height,
-            processing = PageProcessingSpec(PageProcessingMode.AUTO_LIGHT))
+        try {
+            ProjectOperationGate.shared.currentProjectId()?.let { pageOwners[id] = it }
+            val path = "pages/$id/base.png"; savePng(path, image)
+            val thumbnailPath = "pages/$id/thumb.png"; saveThumbnail(thumbnailPath, image)
+            return SamplePage(id, asset, index, position, path, thumbnailPath, image.width, image.height,
+                processing = PageProcessingSpec(PageProcessingMode.AUTO_LIGHT))
+        } finally { if(image !== source) image.flush(); source.flush() }
     }
     fun loadImage(page: SamplePage): BufferedImage {
         val owner = ProjectOperationGate.shared.currentProjectId() ?: pageOwners[page.id]
         fun read(): BufferedImage = synchronized(renderLock) {
-            if (!workspace.assets.exists(page.renderPath) || !workspace.assets.exists(page.thumbnailPath)) rebuildDerived(page)
-            decodeImage(workspace.assets.readBytes(page.renderPath)).also {
-                require(it.width == page.width && it.height == page.height) { "PAGE_DIMENSIONS_CHANGED" }
-            }
+            if (!workspace.assets.exists(page.renderPath)) rebuildDerived(page)
+            val image=decodeImage(workspace.assets.readBytes(page.renderPath))
+            try {
+                require(image.width == page.width && image.height == page.height) { "PAGE_DIMENSIONS_CHANGED" }
+                if (!workspace.assets.exists(page.thumbnailPath)) saveThumbnail(page.thumbnailPath,image)
+                image
+            } catch(failure:Throwable) { image.flush(); throw failure }
         }
         return if (owner == null) {
             // Reading existing data is safe through file leases; rebuilding requires a project lease.
             require(workspace.assets.exists(page.renderPath) && workspace.assets.exists(page.thumbnailPath)) { "DERIVED_IMAGE_MISSING" }
             read()
         } else runBlocking { ProjectOperationGate.shared.withLease(owner) { read() } }
+    }
+
+    /** Small display derivatives can be repaired only when absent or explicitly requested. */
+    internal fun loadThumbnail(page: SamplePage, rebuild: Boolean = false): BufferedImage {
+        val owner=ProjectOperationGate.shared.currentProjectId() ?: pageOwners[page.id]
+        fun read():BufferedImage=synchronized(renderLock) {
+            if(rebuild || !workspace.assets.exists(page.thumbnailPath)) {
+                // Authenticate any existing ciphertext before explicit replacement. Authentication
+                // failure must never be mistaken for a missing/oversized derived image.
+                if(rebuild && workspace.assets.exists(page.thumbnailPath)) workspace.assets.open(page.thumbnailPath).use { input ->
+                    val buffer=ByteArray(8192); while(input.read(buffer)>=0) { /* authenticate to EOF */ }
+                }
+                check(ProjectOperationGate.shared.currentProjectId()!=null) { "DERIVED_IMAGE_REBUILD_REQUIRES_PROJECT" }
+                val base=loadImage(page)
+                try { if(rebuild || !workspace.assets.exists(page.thumbnailPath))saveThumbnail(page.thumbnailPath,base) } finally { base.flush() }
+            }
+            val bytes=workspace.assets.open(page.thumbnailPath).use(::readThumbnailBytes)
+            val legacy=decodeImage(bytes,ThumbnailBounds.LEGACY_WIDTH,ThumbnailBounds.LEGACY_HEIGHT)
+            if(legacy.width<=ThumbnailBounds.WIDTH && legacy.height<=ThumbnailBounds.HEIGHT)legacy
+            else try { thumbnailCopy(legacy) } finally { legacy.flush() }
+        }
+        return if (owner == null) {
+            require(workspace.assets.exists(page.thumbnailPath) && !rebuild) { "DERIVED_IMAGE_MISSING" }
+            read()
+        } else runBlocking { ProjectOperationGate.shared.withLease(owner) { read() } }
+    }
+
+    /** UI-only decoder budget; recognition/geometry keep their existing processing contracts. */
+    internal fun validateDisplayImageRequest(key:DisplayImageKey) {
+        check(!closing) { "IMAGE_LOADER_CLOSED" }
+        ProjectOperationGate.shared.checkProject(key.projectId)
+        check(selectedProjectId==key.projectId) { "PROJECT_CHANGED" }
+    }
+    suspend fun loadDisplayImage(projectId:String,page:SamplePage,source:DisplayImageSource=DisplayImageSource.BASE,
+        rebuildThumbnail:Boolean=false):androidx.compose.ui.graphics.ImageBitmap {
+        val key=DisplayImageKey.of(projectId,page,source)
+        return ProjectOperationGate.shared.withLease(projectId) {
+            displayImages.load(key,decode={
+                pageOwners[page.id]=projectId
+                when(source) {
+                    DisplayImageSource.BASE -> loadImage(page)
+                    DisplayImageSource.ORIGINAL -> loadOriginalImage(page)
+                    DisplayImageSource.ENHANCED -> loadImage(page,true)
+                    DisplayImageSource.THUMBNAIL -> loadThumbnail(page,rebuildThumbnail)
+                }
+            },convert={ it.toComposeImageBitmap() })
+        }
     }
 
     /** The original is immutable. Enhanced display is accepted only when its complete evidence chain matches. */
@@ -489,25 +575,38 @@ class Controller(val workspace: SecureWorkspace, val modelDir: Path, startWorker
         return runCatching {
             val bytes = workspace.assets.readBytes(artifact.relativePath)
             require(bytes.size.toLong() == artifact.byteCount && hash(bytes) == artifact.sha256)
-            decodeImage(bytes).also { require(it.width == page.width && it.height == page.height) }
+            val image=decodeImage(bytes)
+            try {require(image.width==page.width && image.height==page.height);image}
+            catch(failure:Throwable){image.flush();throw failure}
         }.getOrElse { error("ENHANCEMENT_UNAVAILABLE") }
     }
 
     fun loadOriginalImage(page: SamplePage): BufferedImage {
-        val bytes = workspace.assets.readBytes(page.asset.relativePath)
-        require(bytes.size.toLong() == page.asset.byteCount && hash(bytes) == page.asset.sha256) { "ASSET_INTEGRITY" }
-        return if (page.asset.kind == SampleKind.PDF) PdfClient(workspace.assets).open(page.asset.relativePath).use {
-            require(page.sourcePageIndex in 0 until it.pageCount) { "PAGE_OUT_OF_RANGE" }
-            scaleBase(decodeImage(it.render(page.sourcePageIndex, 144)))
-        } else scaleBase(decodeImage(bytes))
+        if(page.asset.kind == SampleKind.PDF) {
+            workspace.assets.open(page.asset.relativePath).use { verifyOriginalStream(it,page.asset) }
+            return PdfClient(workspace.assets).open(page.asset.relativePath).use {
+                require(page.sourcePageIndex in 0 until it.pageCount) { "PAGE_OUT_OF_RANGE" }
+                val original=decodeImage(it.render(page.sourcePageIndex,144))
+                val scaled=try { scaleBase(original) } catch(failure:Throwable) { original.flush(); throw failure }
+                if(scaled !== original) original.flush()
+                scaled
+            }
+        }
+        val bytes=workspace.assets.readBytes(page.asset.relativePath)
+        require(bytes.size.toLong()==page.asset.byteCount && hash(bytes).equals(page.asset.sha256,true)) { "ASSET_INTEGRITY" }
+        val original=decodeImage(bytes)
+        val scaled=try {scaleBase(original)}catch(failure:Throwable){original.flush();throw failure}
+        if(scaled !== original) original.flush()
+        return scaled
     }
 
-    private fun decodeImage(bytes: ByteArray): BufferedImage = ImageIO.createImageInputStream(ByteArrayInputStream(bytes)).use { input ->
+    private fun decodeImage(bytes: ByteArray, maxWidth:Int=Int.MAX_VALUE,maxHeight:Int=Int.MAX_VALUE): BufferedImage = ImageIO.createImageInputStream(ByteArrayInputStream(bytes)).use { input ->
         requireNotNull(input) { "IMAGE_DECODE" }
         val reader = ImageIO.getImageReaders(input).asSequence().firstOrNull() ?: error("IMAGE_DECODE")
         try {
             reader.input = input
             require(reader.getWidth(0).toLong() * reader.getHeight(0) in 1L..100_000_000L) { "IMAGE_TOO_LARGE" }
+            require(reader.getWidth(0)<=maxWidth && reader.getHeight(0)<=maxHeight) { "THUMBNAIL_REBUILD_REQUIRED" }
             reader.read(0) ?: error("IMAGE_DECODE")
         } finally { reader.dispose() }
     }
@@ -522,9 +621,14 @@ class Controller(val workspace: SecureWorkspace, val modelDir: Path, startWorker
     }
 
     private fun saveThumbnail(path: String, image: BufferedImage) {
-        val thumbnail = BufferedImage(160, (160.0 * image.height / image.width).toInt().coerceAtLeast(1), BufferedImage.TYPE_INT_RGB)
-        try { thumbnail.createGraphics().useGraphics { it.drawImage(image, 0, 0, thumbnail.width, thumbnail.height, null) }; savePng(path, thumbnail) }
-        finally { thumbnail.flush() }
+        val thumbnail=thumbnailCopy(image)
+        try {savePng(path,thumbnail)}finally{thumbnail.flush()}
+    }
+    private fun thumbnailCopy(image:BufferedImage):BufferedImage {
+        val (width,height)=ThumbnailBounds.size(image.width,image.height)
+        val thumbnail = BufferedImage(width,height,BufferedImage.TYPE_INT_RGB)
+        thumbnail.createGraphics().useGraphics { it.drawImage(image,0,0,width,height,null) }
+        return thumbnail
     }
 
     private fun rebuildDerived(page: SamplePage) {
@@ -532,10 +636,12 @@ class Controller(val workspace: SecureWorkspace, val modelDir: Path, startWorker
         val original = loadOriginalImage(page)
         val matrix = page.transform.sourceToPage
         val identity = listOf(1f, 0f, 0f, 0f, 1f, 0f, 0f, 0f, 1f)
-        val rebuilt = if (matrix == identity && original.width == page.width && original.height == page.height) original
-            else vision.warpGeometry(original, matrix, page.width, page.height)
-        try { savePng(page.renderPath, rebuilt); saveThumbnail(page.thumbnailPath, rebuilt) }
-        finally { if (rebuilt !== original) rebuilt.flush(); original.flush() }
+        try {
+            val rebuilt = if (matrix == identity && original.width == page.width && original.height == page.height) original
+                else vision.warpGeometry(original, matrix, page.width, page.height)
+            try { savePng(page.renderPath, rebuilt); saveThumbnail(page.thumbnailPath, rebuilt) }
+            finally { if (rebuilt !== original) rebuilt.flush() }
+        } finally { original.flush() }
     }
     private fun savePng(path: String, image: BufferedImage) {
         val out = ByteArrayOutputStream(); check(ImageIO.write(image, "png", out))
@@ -743,11 +849,13 @@ class Controller(val workspace: SecureWorkspace, val modelDir: Path, startWorker
             if (page.templatePageId in completedSlots) continue
             val templatePage = review.template.document.pages.first { it.id == page.templatePageId }
             pageOwners[templatePage.id] = job.projectId; pageOwners[page.image.id] = job.projectId
-            val templateImage = loadImage(templatePage); val submittedImage = loadImage(page.image)
-            val result = try { vision.recognize(templatePage, templateImage, page.image, submittedImage,
-                review.template.document.questions.filter { it.pageId == templatePage.id }, review.project.project.questionnaireLanguage, profile, job.id,
-                hash(workspace.assets.readBytes(page.image.renderPath))) }
-                finally { templateImage.flush(); submittedImage.flush() }
+            val templateImage = loadImage(templatePage)
+            val result = try {
+                val submittedImage=loadImage(page.image)
+                try {vision.recognize(templatePage, templateImage, page.image, submittedImage,
+                    review.template.document.questions.filter { it.pageId == templatePage.id }, review.project.project.questionnaireLanguage, profile, job.id,
+                    hash(workspace.assets.readBytes(page.image.renderPath)))}finally{submittedImage.flush()}
+            } finally {templateImage.flush()}
             currentCoroutineContext().ensureActive()
             if (!repositories.intelligence.isRecognitionClaimValid(job, true)) return
             if (state.value.paused) { repositories.intelligence.pauseRecognition(job, "USER_PAUSED"); return }
@@ -764,6 +872,7 @@ class Controller(val workspace: SecureWorkspace, val modelDir: Path, startWorker
         try { runBlocking { actions.withLock {
             editorSaveJob?.cancelAndJoin(); uiSaveJob?.cancelAndJoin()
             flushEdits(); flushUiPreferences()
+            displayImages.closeAndAwait()
             scope.coroutineContext[Job]?.cancelAndJoin(); workspace.close()
         } } }
         catch (e: Exception) { closing = false; throw e }

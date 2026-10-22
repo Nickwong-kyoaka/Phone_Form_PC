@@ -26,34 +26,50 @@ internal class ReviewPageLoader(private val scope: CoroutineScope,
 
     @Synchronized private fun publish(ticket: Long, request: Triple<String?, ReviewPageQuery, Long>,
         change: (ReviewListState) -> ReviewListState) {
-        if (generation.get() == ticket && requested == request) mutable.value = change(mutable.value)
+        if (generation.get() == ticket && requested?.let { it.first == request.first && it.second == request.second } == true)
+            mutable.value = change(mutable.value)
     }
 
     @Synchronized fun request(projectId: String?, query: ReviewPageQuery, dataRevision: Long,
         searchDelayMillis: Long = 0, force: Boolean = false) {
         val next = Triple(projectId, query.normalized(), dataRevision)
         if (!force && next == requested) return
+        val sameQuery = requested?.let { it.first == next.first && it.second == next.second } == true
         val sameSearch = requested?.let { it.first == next.first && it.second.search == next.second.search } == true
         if (force || !sameSearch) searchReadyAtNanos = if (searchDelayMillis > 0)
             System.nanoTime() + searchDelayMillis * 1_000_000 else 0L
         val waitMillis = ((searchReadyAtNanos - System.nanoTime()) / 1_000_000).coerceAtLeast(0)
         requested = next
+        if (!force && sameQuery && worker?.isActive == true) return
         val ticket = generation.incrementAndGet()
         worker?.cancel()
         if (projectId == null) { mutable.value = ReviewListState(); return }
         val previous = mutable.value
         mutable.value = ReviewListState(projectId, next.second,
             previous.page.takeIf { previous.projectId == projectId }, true, null,
-            previous.page != null && previous.projectId == projectId, dataRevision)
+            previous.page != null && previous.projectId == projectId && previous.page.query != next.second, dataRevision)
         worker = scope.launch {
             try {
                 if (waitMillis > 0) delay(waitMillis)
-                val page = read(projectId, next.second)
-                publish(ticket, next) { ReviewListState(projectId, next.second, page, dataRevision = dataRevision) }
+                var current = synchronized(this@ReviewPageLoader) {
+                    requested?.takeIf { generation.get() == ticket && it.first == projectId && it.second == next.second }
+                } ?: return@launch
+                while (true) {
+                    try {
+                        val page = read(projectId, current.second)
+                        publish(ticket, current) { ReviewListState(projectId, current.second, page, dataRevision = current.third) }
+                    } catch (failure: CancellationException) { throw failure }
+                    catch (failure: Exception) {
+                        publish(ticket, current) { it.copy(loading = false, error = errorCode(failure), stale = it.page != null) }
+                    }
+                    val following = synchronized(this@ReviewPageLoader) {
+                        if (generation.get() != ticket || requested?.let { it.first != projectId || it.second != current.second } != false) null
+                        else requested?.takeIf { it != current }.also { if (it == null) worker = null }
+                    } ?: break
+                    current = following
+                }
             } catch (failure: CancellationException) { throw failure }
-            catch (failure: Exception) {
-                publish(ticket, next) { it.copy(loading = false, error = errorCode(failure), stale = it.page != null) }
-            } finally {
+            finally {
                 publish(ticket, next) { if (it.loading) it.copy(loading = false) else it }
             }
         }

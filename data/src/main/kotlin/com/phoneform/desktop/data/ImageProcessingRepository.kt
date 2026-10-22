@@ -7,8 +7,16 @@ internal fun Records.ownerPages(owner: PageProcessingOwner): List<SamplePage>? {
     if (!eligible(owner.projectId, true)) return null
     return when (owner.kind) {
         PageProcessingOwnerKind.TEMPLATE_DRAFT -> get<TemplateDraft>("template_draft", owner.id)?.takeIf { it.projectId == owner.projectId && it.revision == owner.revision }?.pages
-        PageProcessingOwnerKind.SUBMISSION_DRAFT -> get<SubmissionDraft>("submission_draft", owner.id)?.takeIf { it.projectId == owner.projectId && it.editRevision == owner.revision }?.pages?.map { it.image }
-        PageProcessingOwnerKind.SUBMISSION_REVISION -> get<SubmissionRevision>("revision", owner.id)?.takeIf { it.projectId == owner.projectId && it.number == owner.revision && get<Submission>("submission", it.submissionId)?.currentRevisionId == it.id }?.pages?.map { it.image }
+        PageProcessingOwnerKind.SUBMISSION_DRAFT -> get<SubmissionDraft>("submission_draft", owner.id)?.takeIf { draft ->
+            draft.projectId == owner.projectId && draft.editRevision == owner.revision && get<Submission>("submission",draft.submissionId)?.let {
+                it.projectId == owner.projectId && !it.discarded && it.currentRevisionId == draft.baseRevisionId
+            } == true
+        }?.pages?.map { it.image }
+        PageProcessingOwnerKind.SUBMISSION_REVISION -> get<SubmissionRevision>("revision", owner.id)?.takeIf { revision ->
+            revision.projectId == owner.projectId && revision.number == owner.revision && get<Submission>("submission",revision.submissionId)?.let {
+                it.projectId == owner.projectId && !it.discarded && it.currentRevisionId == revision.id
+            } == true
+        }?.pages?.map { it.image }
     }
 }
 internal fun pageHash(db: DesktopRepositories, page: SamplePage): String = MessageDigest.getInstance("SHA-256").digest(db.workspace.assets.readBytes(page.renderPath)).joinToString("") { "%02x".format(it.toInt() and 255) }
@@ -95,6 +103,7 @@ internal class DesktopImageProcessingRepository(private val db: DesktopRepositor
     override suspend fun fail(job: PageProcessingJob, reason: String) { db.write { valid(job)?.let { put("image_job", it.id, it.owner.projectId, it.copy(status = PageProcessingStatus.FAILED, error = reason, runToken = null, processSessionId = null)) } } }
     override suspend fun retry(jobId: String) { db.write {
         val job = requireNotNull(get<PageProcessingJob>("image_job", jobId)); active(job.owner.projectId)
+        if (imageJob(job.owner,job.page.id,job.inputFingerprint)?.id != job.id) throw StalePageProcessingException()
         if (ownerPages(job.owner)?.any { it.id == job.page.id && PageProcessingFingerprint.of(it) == job.inputFingerprint } != true) throw StalePageProcessingException()
         if (job.status in listOf(PageProcessingStatus.PAUSED, PageProcessingStatus.FAILED)) put("image_job", job.id, job.owner.projectId, job.copy(status = PageProcessingStatus.QUEUED, error = null, runToken = null, processSessionId = null))
     } }

@@ -12,10 +12,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.clipRect
-import androidx.compose.ui.graphics.toComposeImageBitmap
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextOverflow
@@ -402,9 +400,8 @@ import java.io.File
     val savedView = remember(projectId,page.id) { controller.ui.value.projects[projectId]?.canvasViews?.get(page.id)?.normalized() ?: CanvasViewState(pan=!editable) }
     var source by remember(projectId,page.id){mutableStateOf(if(editable) "BASE" else savedView.source)}
     var sourceMenu by remember(page.id){mutableStateOf(false)}
-    var reload by remember(page.id){mutableIntStateOf(0)}
-    var bitmap by remember(page.id,page.revision,page.renderPath) {mutableStateOf<ImageBitmap?>(null)};var error by remember(page.id){mutableStateOf(false)}
-    LaunchedEffect(page.id,page.revision,page.renderPath,source,reload) {error=false;bitmap=null;try{bitmap=withContext(Dispatchers.IO){(when(source){"ORIGINAL"->controller.loadOriginalImage(page);"ENHANCED"->controller.loadImage(page,true);else->controller.loadImage(page)}).toComposeImageBitmap()}}catch(cancelled:CancellationException){throw cancelled}catch(_:Exception){error=true}}
+    val display=rememberDisplayImage(controller,projectId,page,when(source){"ORIGINAL"->DisplayImageSource.ORIGINAL;"ENHANCED"->DisplayImageSource.ENHANCED;else->DisplayImageSource.BASE})
+    val bitmap=display.bitmap
     var zoom by remember(projectId,page.id){mutableStateOf(savedView.zoom)};var pan by remember(projectId,page.id){mutableStateOf(savedView.pan)};var offset by remember(projectId,page.id){mutableStateOf(Offset(savedView.offsetX,savedView.offsetY))}
     var pending by remember(page.id){mutableStateOf<NormalizedRect?>(null)};var anchor by remember{mutableStateOf(Offset.Zero)}
     val handleHitPx=with(LocalDensity.current){12.dp.toPx()}
@@ -436,7 +433,7 @@ import java.io.File
         HorizontalDivider()
         val image=bitmap
         if(image==null) Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha=.4f)), contentAlignment = Alignment.Center) {
-            if(error) Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(10.dp)) { Text(tr(language,"影像無法開啟","图像无法打开","Image unavailable")); TextButton(onClick={reload++}) { Text(tr(language,"重試","重试","Retry")) } } else CircularProgressIndicator(Modifier.size(28.dp),strokeWidth=3.dp)
+            if(display.error!=null) Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(10.dp)) { Text(tr(language,"影像無法開啟","图像无法打开","Image unavailable")); TextButton(onClick={display.retry(false)}) { Text(tr(language,"重試","重试","Retry")) } } else CircularProgressIndicator(Modifier.size(28.dp),strokeWidth=3.dp)
         }
         if(image!=null) Canvas(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha=.55f)).pointerInput(page.id,zoom,pan,selected,editable,image,handleHitPx) {
             fun fit():Pair<Offset,Size> {val scale=minOf(size.width.toFloat()/image.width,size.height.toFloat()/image.height)*zoom;val sz=Size(image.width*scale,image.height*scale);return Offset((size.width-sz.width)/2+offset.x*size.width,(size.height-sz.height)/2+offset.y*size.height) to sz}
@@ -501,7 +498,8 @@ fun parsePages(text:String,count:Int):List<Int> {
 @Composable fun QualityPanel(controller:Controller,owner:PageProcessingOwner,pages:List<SamplePage>,language:UiLanguage,refresh:Boolean) {
     var states by remember(owner){mutableStateOf<List<Pair<SamplePage,PageProcessingState>>>(emptyList())}
     val session = "quality:${owner.kind}:${owner.id}:${owner.revision}"
-    var reason by encryptedText(controller,session,owner.projectId,"reason")
+    val reasonField=recoverableEncryptedText(controller,session,owner.projectId,"reason")
+    var reason by reasonField
     var details by remember(owner) { mutableStateOf(false) }
     LaunchedEffect(owner,pages,refresh){while(isActive){states=pages.map {it to controller.repositories.imageProcessing.getPageState(owner,it.id)};delay(800)}}
     val unresolved=states.filter {(_,s)->val result=s.result;s.keepDecision==null&&(result==null||result.report.assessment==PageQualityAssessment.UNKNOWN||result.report.issues.isNotEmpty())}
@@ -531,9 +529,19 @@ fun parsePages(text:String,count:Int):List<Int> {
             }
         }
         if(unresolved.isNotEmpty()) {
+            if(!reasonField.ready) {
+                RecoveryFieldsProblem(EditorRecoveryFields(reasonField),controller,session,language)
+                return@Column
+            }
             Text(tr(language,"檢查上述影像後，可記錄理由並保留目前版本。","检查以上图像后，可记录理由并保留当前版本。","Inspect these images, then record a reason if you want to keep the current versions."),style=MaterialTheme.typography.bodySmall)
-            Field(tr(language,"仍要使用的理由","仍要使用的理由","Reason to keep these pages"),reason,{reason=it},false)
-            OutlinedButton(enabled=reason.isNotBlank(),onClick={controller.perform {repositories.imageProcessing.keepAllWarnings(owner,unresolved.associate {(p,_)->p.id to PageProcessingFingerprint.of(p)},reason); clearEditor(session)}}){Text(tr(language,"確認保留當前影像","确认保留当前影像","Keep current images"))}
+            Field(tr(language,"仍要使用的理由","仍要使用的理由","Reason to keep these pages"),reason,{entered->controller.editIfAvailable(reasonField){entered}},false)
+            OutlinedButton(enabled=reason.isNotBlank(),onClick={controller.perform {
+                reasonField.requireReady()
+                val latestReason=reasonField.value
+                require(latestReason.isNotBlank()){"QUALITY_KEEP_REASON_REQUIRED"}
+                repositories.imageProcessing.keepAllWarnings(owner,unresolved.associate {(p,_)->p.id to PageProcessingFingerprint.of(p)},latestReason)
+                clearEditor(session)
+            }}){Text(tr(language,"確認保留當前影像","确认保留当前影像","Keep current images"))}
         }
         if(states.isNotEmpty()) {
             TextButton(onClick={details=!details}) {Text(tr(language,"技術詳情","技术详情","Technical details")+if(details)" ▴" else " ▾")}

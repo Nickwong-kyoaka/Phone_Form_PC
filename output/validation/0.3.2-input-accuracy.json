@@ -1,0 +1,778 @@
+{
+  "result": "MEASURED_WITH_PROCESS_FAILURE",
+  "appVersion": "0.3.2-dev",
+  "engineVersion": "tesseract-5.5_opencv-4.12.0_marks-1",
+  "parametersVersion": "marks-1",
+  "checkedAt": "2026-10-22T10:41:41.364327+00:00",
+  "conditions": "Actual encrypted production PDF import at 144 DPI; raw PDF orientation; same filled PDF used as template and submission. Conditional manual calibration, not alignment generalization. No expected answers, human answers, blank reference, or Excel.",
+  "totals": {
+    "targets": 202,
+    "scorable": 198,
+    "uncertainTruth": 4,
+    "configuredAutomatic": 153,
+    "configuredManual": 49,
+    "candidates": 0,
+    "correct": 0,
+    "wrong": 0,
+    "abstained": 198,
+    "unscored": 4,
+    "truthBlank": 41,
+    "blankFalseSelected": 0,
+    "valueFalseBlank": 0,
+    "candidateOnUncertainTruth": 0,
+    "candidatePrecisionPercent": null,
+    "candidateCoveragePercent": 0.0,
+    "correctOfScorablePercent": 0.0,
+    "reasons": {
+      "OPTION_REQUIRES_MANUAL_REVIEW": 137,
+      "MANUAL_TEXT_REQUIRED": 45,
+      "ALIGNMENT_FAILED:MATCHES_TOO_LOCAL": 6,
+      "NO_READABLE_TEXT": 6,
+      "MANUAL_MARK_STYLE": 4,
+      "INVALID_DATE": 2,
+      "INVALID_NUMBER": 1,
+      "BASE_ENHANCED_OCR_CONFLICT": 1
+    }
+  },
+  "automaticEnabledSubset": {
+    "targets": 153,
+    "scorable": 151,
+    "uncertainTruth": 2,
+    "configuredAutomatic": 153,
+    "configuredManual": 0,
+    "candidates": 0,
+    "correct": 0,
+    "wrong": 0,
+    "abstained": 151,
+    "unscored": 2,
+    "truthBlank": 9,
+    "blankFalseSelected": 0,
+    "valueFalseBlank": 0,
+    "candidateOnUncertainTruth": 0,
+    "candidatePrecisionPercent": null,
+    "candidateCoveragePercent": 0.0,
+    "correctOfScorablePercent": 0.0,
+    "reasons": {
+      "OPTION_REQUIRES_MANUAL_REVIEW": 137,
+      "ALIGNMENT_FAILED:MATCHES_TOO_LOCAL": 6,
+      "NO_READABLE_TEXT": 6,
+      "INVALID_DATE": 2,
+      "INVALID_NUMBER": 1,
+      "BASE_ENHANCED_OCR_CONFLICT": 1
+    }
+  },
+  "manualSubset": {
+    "targets": 49,
+    "scorable": 47,
+    "uncertainTruth": 2,
+    "configuredAutomatic": 0,
+    "configuredManual": 49,
+    "candidates": 0,
+    "correct": 0,
+    "wrong": 0,
+    "abstained": 47,
+    "unscored": 2,
+    "truthBlank": 32,
+    "blankFalseSelected": 0,
+    "valueFalseBlank": 0,
+    "candidateOnUncertainTruth": 0,
+    "candidatePrecisionPercent": null,
+    "candidateCoveragePercent": 0.0,
+    "correctOfScorablePercent": 0.0,
+    "reasons": {
+      "MANUAL_TEXT_REQUIRED": 45,
+      "MANUAL_MARK_STYLE": 4
+    }
+  },
+  "byType": {
+    "DATE": {
+      "targets": 4,
+      "scorable": 4,
+      "uncertainTruth": 0,
+      "configuredAutomatic": 4,
+      "configuredManual": 0,
+      "candidates": 0,
+      "correct": 0,
+      "wrong": 0,
+      "abstained": 4,
+      "unscored": 0,
+      "truthBlank": 1,
+      "blankFalseSelected": 0,
+      "valueFalseBlank": 0,
+      "candidateOnUncertainTruth": 0,
+      "candidatePrecisionPercent": null,
+      "candidateCoveragePercent": 0.0,
+      "correctOfScorablePercent": 0.0,
+      "reasons": {
+        "INVALID_DATE": 2,
+        "ALIGNMENT_FAILED:MATCHES_TOO_LOCAL": 1,
+        "NO_READABLE_TEXT": 1
+      }
+    },
+    "MATRIX": {
+      "targets": 119,
+      "scorable": 117,
+      "uncertainTruth": 2,
+      "configuredAutomatic": 119,
+      "configuredManual": 0,
+      "candidates": 0,
+      "correct": 0,
+      "wrong": 0,
+      "abstained": 117,
+      "unscored": 2,
+      "truthBlank": 0,
+      "blankFalseSelected": 0,
+      "valueFalseBlank": 0,
+      "candidateOnUncertainTruth": 0,
+      "candidatePrecisionPercent": null,
+      "candidateCoveragePercent": 0.0,
+      "correctOfScorablePercent": 0.0,
+      "reasons": {
+        "OPTION_REQUIRES_MANUAL_REVIEW": 119
+      }
+    },
+    "MULTIPLE_CHOICE": {
+      "targets": 9,
+      "scorable": 9,
+      "uncertainTruth": 0,
+      "configuredAutomatic": 9,
+      "configuredManual": 0,
+      "candidates": 0,
+      "correct": 0,
+      "wrong": 0,
+      "abstained": 9,
+      "unscored": 0,
+      "truthBlank": 6,
+      "blankFalseSelected": 0,
+      "valueFalseBlank": 0,
+      "candidateOnUncertainTruth": 0,
+      "candidatePrecisionPercent": null,
+      "candidateCoveragePercent": 0.0,
+      "correctOfScorablePercent": 0.0,
+      "reasons": {
+        "OPTION_REQUIRES_MANUAL_REVIEW": 6,
+        "ALIGNMENT_FAILED:MATCHES_TOO_LOCAL": 3
+      }
+    },
+    "NUMBER": {
+      "targets": 7,
+      "scorable": 7,
+      "uncertainTruth": 0,
+      "configuredAutomatic": 7,
+      "configuredManual": 0,
+      "candidates": 0,
+      "correct": 0,
+      "wrong": 0,
+      "abstained": 7,
+      "unscored": 0,
+      "truthBlank": 1,
+      "blankFalseSelected": 0,
+      "valueFalseBlank": 0,
+      "candidateOnUncertainTruth": 0,
+      "candidatePrecisionPercent": null,
+      "candidateCoveragePercent": 0.0,
+      "correctOfScorablePercent": 0.0,
+      "reasons": {
+        "NO_READABLE_TEXT": 5,
+        "INVALID_NUMBER": 1,
+        "BASE_ENHANCED_OCR_CONFLICT": 1
+      }
+    },
+    "SINGLE_CHOICE": {
+      "targets": 18,
+      "scorable": 18,
+      "uncertainTruth": 0,
+      "configuredAutomatic": 14,
+      "configuredManual": 4,
+      "candidates": 0,
+      "correct": 0,
+      "wrong": 0,
+      "abstained": 18,
+      "unscored": 0,
+      "truthBlank": 1,
+      "blankFalseSelected": 0,
+      "valueFalseBlank": 0,
+      "candidateOnUncertainTruth": 0,
+      "candidatePrecisionPercent": null,
+      "candidateCoveragePercent": 0.0,
+      "correctOfScorablePercent": 0.0,
+      "reasons": {
+        "OPTION_REQUIRES_MANUAL_REVIEW": 12,
+        "MANUAL_MARK_STYLE": 4,
+        "ALIGNMENT_FAILED:MATCHES_TOO_LOCAL": 2
+      }
+    },
+    "TEXT": {
+      "targets": 45,
+      "scorable": 43,
+      "uncertainTruth": 2,
+      "configuredAutomatic": 0,
+      "configuredManual": 45,
+      "candidates": 0,
+      "correct": 0,
+      "wrong": 0,
+      "abstained": 43,
+      "unscored": 2,
+      "truthBlank": 32,
+      "blankFalseSelected": 0,
+      "valueFalseBlank": 0,
+      "candidateOnUncertainTruth": 0,
+      "candidatePrecisionPercent": null,
+      "candidateCoveragePercent": 0.0,
+      "correctOfScorablePercent": 0.0,
+      "reasons": {
+        "MANUAL_TEXT_REQUIRED": 45
+      }
+    }
+  },
+  "documents": [
+    {
+      "id": "cn",
+      "pageCount": 6,
+      "totals": {
+        "targets": 118,
+        "scorable": 115,
+        "uncertainTruth": 3,
+        "configuredAutomatic": 95,
+        "configuredManual": 23,
+        "candidates": 0,
+        "correct": 0,
+        "wrong": 0,
+        "abstained": 115,
+        "unscored": 3,
+        "truthBlank": 22,
+        "blankFalseSelected": 0,
+        "valueFalseBlank": 0,
+        "candidateOnUncertainTruth": 0,
+        "candidatePrecisionPercent": null,
+        "candidateCoveragePercent": 0.0,
+        "correctOfScorablePercent": 0.0,
+        "reasons": {
+          "OPTION_REQUIRES_MANUAL_REVIEW": 83,
+          "MANUAL_TEXT_REQUIRED": 22,
+          "ALIGNMENT_FAILED:MATCHES_TOO_LOCAL": 6,
+          "NO_READABLE_TEXT": 5,
+          "MANUAL_MARK_STYLE": 1,
+          "INVALID_NUMBER": 1
+        }
+      },
+      "automaticEnabledSubset": {
+        "targets": 95,
+        "scorable": 94,
+        "uncertainTruth": 1,
+        "configuredAutomatic": 95,
+        "configuredManual": 0,
+        "candidates": 0,
+        "correct": 0,
+        "wrong": 0,
+        "abstained": 94,
+        "unscored": 1,
+        "truthBlank": 5,
+        "blankFalseSelected": 0,
+        "valueFalseBlank": 0,
+        "candidateOnUncertainTruth": 0,
+        "candidatePrecisionPercent": null,
+        "candidateCoveragePercent": 0.0,
+        "correctOfScorablePercent": 0.0,
+        "reasons": {
+          "OPTION_REQUIRES_MANUAL_REVIEW": 83,
+          "ALIGNMENT_FAILED:MATCHES_TOO_LOCAL": 6,
+          "NO_READABLE_TEXT": 5,
+          "INVALID_NUMBER": 1
+        }
+      },
+      "manualSubset": {
+        "targets": 23,
+        "scorable": 21,
+        "uncertainTruth": 2,
+        "configuredAutomatic": 0,
+        "configuredManual": 23,
+        "candidates": 0,
+        "correct": 0,
+        "wrong": 0,
+        "abstained": 21,
+        "unscored": 2,
+        "truthBlank": 17,
+        "blankFalseSelected": 0,
+        "valueFalseBlank": 0,
+        "candidateOnUncertainTruth": 0,
+        "candidatePrecisionPercent": null,
+        "candidateCoveragePercent": 0.0,
+        "correctOfScorablePercent": 0.0,
+        "reasons": {
+          "MANUAL_TEXT_REQUIRED": 22,
+          "MANUAL_MARK_STYLE": 1
+        }
+      },
+      "byType": {
+        "DATE": {
+          "targets": 2,
+          "scorable": 2,
+          "uncertainTruth": 0,
+          "configuredAutomatic": 2,
+          "configuredManual": 0,
+          "candidates": 0,
+          "correct": 0,
+          "wrong": 0,
+          "abstained": 2,
+          "unscored": 0,
+          "truthBlank": 1,
+          "blankFalseSelected": 0,
+          "valueFalseBlank": 0,
+          "candidateOnUncertainTruth": 0,
+          "candidatePrecisionPercent": null,
+          "candidateCoveragePercent": 0.0,
+          "correctOfScorablePercent": 0.0,
+          "reasons": {
+            "ALIGNMENT_FAILED:MATCHES_TOO_LOCAL": 1,
+            "NO_READABLE_TEXT": 1
+          }
+        },
+        "MATRIX": {
+          "targets": 73,
+          "scorable": 72,
+          "uncertainTruth": 1,
+          "configuredAutomatic": 73,
+          "configuredManual": 0,
+          "candidates": 0,
+          "correct": 0,
+          "wrong": 0,
+          "abstained": 72,
+          "unscored": 1,
+          "truthBlank": 0,
+          "blankFalseSelected": 0,
+          "valueFalseBlank": 0,
+          "candidateOnUncertainTruth": 0,
+          "candidatePrecisionPercent": null,
+          "candidateCoveragePercent": 0.0,
+          "correctOfScorablePercent": 0.0,
+          "reasons": {
+            "OPTION_REQUIRES_MANUAL_REVIEW": 73
+          }
+        },
+        "MULTIPLE_CHOICE": {
+          "targets": 5,
+          "scorable": 5,
+          "uncertainTruth": 0,
+          "configuredAutomatic": 5,
+          "configuredManual": 0,
+          "candidates": 0,
+          "correct": 0,
+          "wrong": 0,
+          "abstained": 5,
+          "unscored": 0,
+          "truthBlank": 3,
+          "blankFalseSelected": 0,
+          "valueFalseBlank": 0,
+          "candidateOnUncertainTruth": 0,
+          "candidatePrecisionPercent": null,
+          "candidateCoveragePercent": 0.0,
+          "correctOfScorablePercent": 0.0,
+          "reasons": {
+            "ALIGNMENT_FAILED:MATCHES_TOO_LOCAL": 3,
+            "OPTION_REQUIRES_MANUAL_REVIEW": 2
+          }
+        },
+        "NUMBER": {
+          "targets": 5,
+          "scorable": 5,
+          "uncertainTruth": 0,
+          "configuredAutomatic": 5,
+          "configuredManual": 0,
+          "candidates": 0,
+          "correct": 0,
+          "wrong": 0,
+          "abstained": 5,
+          "unscored": 0,
+          "truthBlank": 0,
+          "blankFalseSelected": 0,
+          "valueFalseBlank": 0,
+          "candidateOnUncertainTruth": 0,
+          "candidatePrecisionPercent": null,
+          "candidateCoveragePercent": 0.0,
+          "correctOfScorablePercent": 0.0,
+          "reasons": {
+            "NO_READABLE_TEXT": 4,
+            "INVALID_NUMBER": 1
+          }
+        },
+        "SINGLE_CHOICE": {
+          "targets": 11,
+          "scorable": 11,
+          "uncertainTruth": 0,
+          "configuredAutomatic": 10,
+          "configuredManual": 1,
+          "candidates": 0,
+          "correct": 0,
+          "wrong": 0,
+          "abstained": 11,
+          "unscored": 0,
+          "truthBlank": 1,
+          "blankFalseSelected": 0,
+          "valueFalseBlank": 0,
+          "candidateOnUncertainTruth": 0,
+          "candidatePrecisionPercent": null,
+          "candidateCoveragePercent": 0.0,
+          "correctOfScorablePercent": 0.0,
+          "reasons": {
+            "OPTION_REQUIRES_MANUAL_REVIEW": 8,
+            "ALIGNMENT_FAILED:MATCHES_TOO_LOCAL": 2,
+            "MANUAL_MARK_STYLE": 1
+          }
+        },
+        "TEXT": {
+          "targets": 22,
+          "scorable": 20,
+          "uncertainTruth": 2,
+          "configuredAutomatic": 0,
+          "configuredManual": 22,
+          "candidates": 0,
+          "correct": 0,
+          "wrong": 0,
+          "abstained": 20,
+          "unscored": 2,
+          "truthBlank": 17,
+          "blankFalseSelected": 0,
+          "valueFalseBlank": 0,
+          "candidateOnUncertainTruth": 0,
+          "candidatePrecisionPercent": null,
+          "candidateCoveragePercent": 0.0,
+          "correctOfScorablePercent": 0.0,
+          "reasons": {
+            "MANUAL_TEXT_REQUIRED": 22
+          }
+        }
+      },
+      "automaticQuestionCounts": [
+        {
+          "page": 0,
+          "count": 4,
+          "error": null
+        },
+        {
+          "page": 1,
+          "count": 8,
+          "error": null
+        },
+        {
+          "page": 2,
+          "count": 6,
+          "error": null
+        },
+        {
+          "page": 3,
+          "count": 3,
+          "error": null
+        },
+        {
+          "page": 4,
+          "count": 10,
+          "error": null
+        },
+        {
+          "page": 5,
+          "count": 7,
+          "error": null
+        }
+      ],
+      "alignmentCounts": {
+        "FAILED": 1,
+        "ALIGNED": 5
+      },
+      "exclusionCount": 4
+    },
+    {
+      "id": "eng",
+      "pageCount": 8,
+      "totals": {
+        "targets": 84,
+        "scorable": 83,
+        "uncertainTruth": 1,
+        "configuredAutomatic": 58,
+        "configuredManual": 26,
+        "candidates": 0,
+        "correct": 0,
+        "wrong": 0,
+        "abstained": 83,
+        "unscored": 1,
+        "truthBlank": 19,
+        "blankFalseSelected": 0,
+        "valueFalseBlank": 0,
+        "candidateOnUncertainTruth": 0,
+        "candidatePrecisionPercent": null,
+        "candidateCoveragePercent": 0.0,
+        "correctOfScorablePercent": 0.0,
+        "reasons": {
+          "OPTION_REQUIRES_MANUAL_REVIEW": 54,
+          "MANUAL_TEXT_REQUIRED": 23,
+          "MANUAL_MARK_STYLE": 3,
+          "INVALID_DATE": 2,
+          "NO_READABLE_TEXT": 1,
+          "BASE_ENHANCED_OCR_CONFLICT": 1
+        }
+      },
+      "automaticEnabledSubset": {
+        "targets": 58,
+        "scorable": 57,
+        "uncertainTruth": 1,
+        "configuredAutomatic": 58,
+        "configuredManual": 0,
+        "candidates": 0,
+        "correct": 0,
+        "wrong": 0,
+        "abstained": 57,
+        "unscored": 1,
+        "truthBlank": 4,
+        "blankFalseSelected": 0,
+        "valueFalseBlank": 0,
+        "candidateOnUncertainTruth": 0,
+        "candidatePrecisionPercent": null,
+        "candidateCoveragePercent": 0.0,
+        "correctOfScorablePercent": 0.0,
+        "reasons": {
+          "OPTION_REQUIRES_MANUAL_REVIEW": 54,
+          "INVALID_DATE": 2,
+          "NO_READABLE_TEXT": 1,
+          "BASE_ENHANCED_OCR_CONFLICT": 1
+        }
+      },
+      "manualSubset": {
+        "targets": 26,
+        "scorable": 26,
+        "uncertainTruth": 0,
+        "configuredAutomatic": 0,
+        "configuredManual": 26,
+        "candidates": 0,
+        "correct": 0,
+        "wrong": 0,
+        "abstained": 26,
+        "unscored": 0,
+        "truthBlank": 15,
+        "blankFalseSelected": 0,
+        "valueFalseBlank": 0,
+        "candidateOnUncertainTruth": 0,
+        "candidatePrecisionPercent": null,
+        "candidateCoveragePercent": 0.0,
+        "correctOfScorablePercent": 0.0,
+        "reasons": {
+          "MANUAL_TEXT_REQUIRED": 23,
+          "MANUAL_MARK_STYLE": 3
+        }
+      },
+      "byType": {
+        "DATE": {
+          "targets": 2,
+          "scorable": 2,
+          "uncertainTruth": 0,
+          "configuredAutomatic": 2,
+          "configuredManual": 0,
+          "candidates": 0,
+          "correct": 0,
+          "wrong": 0,
+          "abstained": 2,
+          "unscored": 0,
+          "truthBlank": 0,
+          "blankFalseSelected": 0,
+          "valueFalseBlank": 0,
+          "candidateOnUncertainTruth": 0,
+          "candidatePrecisionPercent": null,
+          "candidateCoveragePercent": 0.0,
+          "correctOfScorablePercent": 0.0,
+          "reasons": {
+            "INVALID_DATE": 2
+          }
+        },
+        "MATRIX": {
+          "targets": 46,
+          "scorable": 45,
+          "uncertainTruth": 1,
+          "configuredAutomatic": 46,
+          "configuredManual": 0,
+          "candidates": 0,
+          "correct": 0,
+          "wrong": 0,
+          "abstained": 45,
+          "unscored": 1,
+          "truthBlank": 0,
+          "blankFalseSelected": 0,
+          "valueFalseBlank": 0,
+          "candidateOnUncertainTruth": 0,
+          "candidatePrecisionPercent": null,
+          "candidateCoveragePercent": 0.0,
+          "correctOfScorablePercent": 0.0,
+          "reasons": {
+            "OPTION_REQUIRES_MANUAL_REVIEW": 46
+          }
+        },
+        "MULTIPLE_CHOICE": {
+          "targets": 4,
+          "scorable": 4,
+          "uncertainTruth": 0,
+          "configuredAutomatic": 4,
+          "configuredManual": 0,
+          "candidates": 0,
+          "correct": 0,
+          "wrong": 0,
+          "abstained": 4,
+          "unscored": 0,
+          "truthBlank": 3,
+          "blankFalseSelected": 0,
+          "valueFalseBlank": 0,
+          "candidateOnUncertainTruth": 0,
+          "candidatePrecisionPercent": null,
+          "candidateCoveragePercent": 0.0,
+          "correctOfScorablePercent": 0.0,
+          "reasons": {
+            "OPTION_REQUIRES_MANUAL_REVIEW": 4
+          }
+        },
+        "NUMBER": {
+          "targets": 2,
+          "scorable": 2,
+          "uncertainTruth": 0,
+          "configuredAutomatic": 2,
+          "configuredManual": 0,
+          "candidates": 0,
+          "correct": 0,
+          "wrong": 0,
+          "abstained": 2,
+          "unscored": 0,
+          "truthBlank": 1,
+          "blankFalseSelected": 0,
+          "valueFalseBlank": 0,
+          "candidateOnUncertainTruth": 0,
+          "candidatePrecisionPercent": null,
+          "candidateCoveragePercent": 0.0,
+          "correctOfScorablePercent": 0.0,
+          "reasons": {
+            "NO_READABLE_TEXT": 1,
+            "BASE_ENHANCED_OCR_CONFLICT": 1
+          }
+        },
+        "SINGLE_CHOICE": {
+          "targets": 7,
+          "scorable": 7,
+          "uncertainTruth": 0,
+          "configuredAutomatic": 4,
+          "configuredManual": 3,
+          "candidates": 0,
+          "correct": 0,
+          "wrong": 0,
+          "abstained": 7,
+          "unscored": 0,
+          "truthBlank": 0,
+          "blankFalseSelected": 0,
+          "valueFalseBlank": 0,
+          "candidateOnUncertainTruth": 0,
+          "candidatePrecisionPercent": null,
+          "candidateCoveragePercent": 0.0,
+          "correctOfScorablePercent": 0.0,
+          "reasons": {
+            "OPTION_REQUIRES_MANUAL_REVIEW": 4,
+            "MANUAL_MARK_STYLE": 3
+          }
+        },
+        "TEXT": {
+          "targets": 23,
+          "scorable": 23,
+          "uncertainTruth": 0,
+          "configuredAutomatic": 0,
+          "configuredManual": 23,
+          "candidates": 0,
+          "correct": 0,
+          "wrong": 0,
+          "abstained": 23,
+          "unscored": 0,
+          "truthBlank": 15,
+          "blankFalseSelected": 0,
+          "valueFalseBlank": 0,
+          "candidateOnUncertainTruth": 0,
+          "candidatePrecisionPercent": null,
+          "candidateCoveragePercent": 0.0,
+          "correctOfScorablePercent": 0.0,
+          "reasons": {
+            "MANUAL_TEXT_REQUIRED": 23
+          }
+        }
+      },
+      "automaticQuestionCounts": [
+        {
+          "page": 0,
+          "count": 1,
+          "error": null
+        },
+        {
+          "page": 1,
+          "count": 1,
+          "error": null
+        },
+        {
+          "page": 2,
+          "count": 5,
+          "error": null
+        },
+        {
+          "page": 3,
+          "count": 8,
+          "error": null
+        },
+        {
+          "page": 4,
+          "count": 7,
+          "error": null
+        },
+        {
+          "page": 5,
+          "count": 10,
+          "error": null
+        },
+        {
+          "page": 6,
+          "count": 17,
+          "error": null
+        },
+        {
+          "page": 7,
+          "count": 0,
+          "error": null
+        }
+      ],
+      "alignmentCounts": {
+        "NOT_REQUIRED": 1,
+        "ALIGNED": 7
+      },
+      "exclusionCount": 5
+    }
+  ],
+  "definitions": {
+    "candidatePrecisionPercent": "correct / candidates, only independently scorable targets; null if no candidates",
+    "candidateCoveragePercent": "candidates / independently scorable targets, including manual fields in denominator",
+    "correctOfScorablePercent": "correct / independently scorable targets, including abstentions",
+    "matrixUnit": "one row, not one entire matrix",
+    "uncertainTruth": "excluded from exact-answer percentages; candidate production is separately reported",
+    "automaticQuestionCounts": "raw detected suggestions; not matched question accuracy"
+  },
+  "nativeExcelOpened": false,
+  "humanAnswersWritten": false,
+  "realScanGeneralizationEstablished": false,
+  "executionRuns": [
+    {
+      "reportSha256": "a16dee96b85d995fc1d7f805d52829419c210f527ebf906921533439d445baa3",
+      "processExitCode": -1073740791,
+      "processStatus": "FAILED_AFTER_COMPLETE_REPORT",
+      "completeReportDigestMatched": true
+    },
+    {
+      "reportSha256": "4048fa3775022f22ced7c21397b12e1d24bd99fc07ae4c44aaa357986215986f",
+      "processExitCode": -1073740791,
+      "processStatus": "FAILED_AFTER_COMPLETE_REPORT",
+      "completeReportDigestMatched": true
+    }
+  ],
+  "parametersFingerprint": "48fd559a1b9fd3fa4298422535145286bf2dd36c90ba719bede5da4f2685fab8",
+  "rawReportSha256": "8bf5c8d9b85a0f6e394e056c704b734f8ebcbec76cd73963350d72f9217a70c4",
+  "truthSha256": [
+    "d9f61f6b3c6cd722855ba93567df2d1a82cc1ed47c3b6fbdbc6805f5ff851eeb",
+    "d45b084c89304e66983f35993f42ff6b064b35de827703dde510f0851e7cadda"
+  ]
+}

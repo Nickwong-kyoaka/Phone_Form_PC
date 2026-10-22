@@ -26,7 +26,9 @@ data class RecognitionRerunTarget(val submissionId: String, val submissionRevisi
 enum class BackgroundTaskPhase { IMAGE, PREPARATION, RECOGNITION }
 data class BackgroundTaskSummary(val id: String, val projectId: String, val phase: BackgroundTaskPhase,
     val status: String, val submissionNumber: Int? = null, val pageNumber: Int? = null,
-    val error: String? = null, val retrySupported: Boolean = false, val createdAtEpochMillis: Long = 0)
+    val error: String? = null, val retrySupported: Boolean = false, val createdAtEpochMillis: Long = 0,
+    val projectName: String = "", val submissionId: String? = null,
+    val collectionDraftId: String? = null, val pageId: String? = null)
 data class BackgroundTaskPage(val items: List<BackgroundTaskSummary>, val total: Int,
     val statusCounts: Map<String, Int>)
 

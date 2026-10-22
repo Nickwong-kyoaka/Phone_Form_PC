@@ -10,7 +10,8 @@ Windows 11 x64 独立离线问卷处理程序 / Standalone offline questionnaire
 
 | Version | Description | Release |
 |---|---|---|
-| **[0.3.1-dev](docs/releases/0.3.1-dev.md)** | 当前开发源码；SQL 分页搜索、轻量摘要及编辑恢复保护 / Current source; SQL paging/search, lightweight summaries and editor-recovery protection | 本机 MSI；本轮不新增 Release / Local MSI; no new Release |
+| **[0.3.2-dev](docs/releases/0.3.2-dev.md)** | 当前开发源码；日常编辑恢复、按需影像与完整任务中心 / Current source; everyday edit recovery, bounded image display and task-center paging | [本机 MSI / Local MSI](output/PhoneForm-AI-PC-0.3.2-dev.msi) · [SHA256](output/PhoneForm-AI-PC-0.3.2-dev.msi.sha256) |
+| [0.3.1-dev](docs/releases/0.3.1-dev.md) | SQL 分页搜索、轻量摘要及编辑恢复保护归档 / SQL paging/search and recovery-protection archive | 前版本机 MSI 保留 / Earlier local MSI preserved |
 | [0.3.0-dev](docs/releases/0.3.0-dev.md) | 辨识设置版本、整组校准及分类标记辨识 / Versioned recognition, group calibration and separate mark detectors | 前版本机 MSI 保留 / Earlier local MSI preserved |
 | 0.2.0-dev | 蓝白桌面布局归档 / Desktop redesign archive | [Windows x64 MSI](https://github.com/Nickwong-kyoaka/Phone_Form_PC/releases/tag/v0.2.0-dev) |
 | 0.1.0-dev | 原始安装包归档 / Original installer archive | [Windows x64 MSI](https://github.com/Nickwong-kyoaka/Phone_Form_PC/releases/tag/v0.1.0-dev) |
@@ -18,6 +19,10 @@ Windows 11 x64 独立离线问卷处理程序 / Standalone offline questionnaire
 从 Release 下载 `.msi`，双击安装；随包 Java、OCR 模型和本地引擎，使用者无需另装 Java，首次使用不下载资源。每个安装包附 `.sha256` 校验文件。
 
 Download the `.msi` from a Release and run it. Java, OCR models and local engines are bundled, with no first-run resource download. Each installer has a matching SHA256 sidecar.
+
+0.3.2 的本机 MSI 连结指本次交付电脑的 `output` 文件；本轮不新增 GitHub Release，也不将 MSI 提交至 Git。原两个 Release 继续提供历史安装包。
+
+The 0.3.2 local MSI link points to the delivery computer's `output` file. This update creates no GitHub Release and does not commit installers to Git. The original two Releases continue to host their historical installers.
 
 以上均为内部试用开发版。0.1 标签仅保存历史安装包说明和证据，原完整源码快照未保留；`main` 提供当前源码，`v0.2.0-dev` 保留该版本源码。0.3 不改动原两个 Release、标签或附件。
 
@@ -32,6 +37,8 @@ These are internal evaluation builds. The 0.1 tag contains archival metadata and
 - 整组选项／矩阵分格、拖动微调、印刷数字核心确认、独立设置版本与预览；不要求额外空白问卷参考。
 - 方框勾叉与圈印刷数字分别分析；歧义转人工，候选保存来源版本，采用仍须明确操作。中文手写与自由文字继续人工输入。
 - 数据库分页搜索、固定修订重跑、按需读取匯出历史；恢复载入失败可重试，未套用草稿不能绕过确认。
+- 日常表单统一恢复屏障、保存前读取最新输入；覆核保存后的重新载入阻止旧答案版本继续输入，损坏恢复索引可查看并明确处理。
+- 显示影像共用有限解码名额，缩图按需载入及安全修复；任务中心可搜索、筛选和分页全部目前任务，并打开其所属问卷或草稿。
 
 - Traditional Chinese, Simplified Chinese and English, with independent interface, questionnaire and Excel-heading languages; questions and answers are not automatically translated.
 - One-questionnaire-at-a-time PDF/JPG/PNG import, fixed page slots, template editing, local OCR/OMR, human review, four-sheet Excel export and historical snapshots.
@@ -40,6 +47,8 @@ These are internal evaluation builds. The 0.1 tag contains archival metadata and
 - Group and matrix partitioning, draggable calibration, printed-core confirmation, immutable settings versions and preview, without an additional blank-reference document.
 - Separate checkbox and circled-digit analysis; ambiguity requires human entry. Candidate adoption is explicit and records its actual source version. Chinese handwriting and free text remain manual.
 - SQL paging/search, revision-pinned reruns and on-demand export snapshots; failed recovery can be retried, and confirmation cannot bypass pending editor drafts.
+- Everyday forms wait for recovery and commit current values. Review reloads block edits bound to an old answer version, and corrupt recovery indexes can be inspected and explicitly handled.
+- Image display uses a shared decoder budget with demand-driven thumbnails and guarded repair. The task center searches, filters and pages all current tasks, and opens their owning questionnaire or draft.
 
 默认工作区为 `%LOCALAPPDATA%\PhoneFormAI-PC`。`PHONEFORM_DATA_DIR` 可指定独立测试工作区。密钥绑定 Windows 用户；本版本不提供跨用户迁移或备份恢复功能。
 
@@ -70,9 +79,25 @@ Kotlin 2.1.20 / Compose Desktop 1.8.2 / JDK 21 / JVM target 17 / Gradle 8.9. `Pr
 
 ## 验证与文档 / Verification and documentation
 
-0.3.1-dev 在 2026-10-22 完成 **166 项不同自动化回归，零失败、错误或跳过**，并成功构建自包含程序及 MSI。新增分页／搜索、真实任务计数、跨页选择、过期响应、固定修订重跑、快照摘要及 12 项编辑恢复安全测试；既有答案、候选来源与四表契约回归通过。本轮没有重复开启 Microsoft Excel。
+0.3.2-dev 于 2026-10-22 完成 **216 项不同自动化回归，零失败、错误或跳过**（domain 37、excel 8、data 47、vision 33、desktop 91）。覆盖日常表单恢复、换版时的旧回呼、损坏恢复索引、影像取消／关闭、缩图认证及完整任务分页，并保留答案、来源与四表契约检查。自包含程序与 MSI 构建成功；7 个资源校验值一致、6 个应用 JAR 已检查，前四版本机 MSI 校验值未变。[回归证据](output/validation/0.3.2-regression.json)与[打包核对](output/validation/0.3.2-package.json)记录实际范围。
 
-On 2026-10-22, **all 166 distinct regression tests passed** for 0.3.1-dev, with no failures, errors or skips. The self-contained application and MSI built successfully. Paging/search, global task counts, cross-page selection, stale responses, pinned reruns, snapshot summaries and 12 recovery-safety tests are covered, alongside existing answer/provenance/four-sheet contracts. Native Microsoft Excel was not opened.
+On 2026-10-22, **all 216 distinct 0.3.2-dev regression tests passed**, with zero failures, errors or skips (domain 37, excel 8, data 47, vision 33, desktop 91). Coverage includes everyday recovery, stale review callbacks, corrupt recovery indexes, image cancellation/shutdown, authenticated thumbnails and task paging, alongside answer/provenance/four-sheet contracts. The distribution and MSI built successfully; seven resource hashes matched, six application jars were checked, and all four earlier MSI hashes are unchanged. See the [regression evidence](output/validation/0.3.2-regression.json) and [package checks](output/validation/0.3.2-package.json).
+
+实际 GUI 仅确认匿名工作区启动及 260 份覆核清单可见；任务中心和答案编辑的 GUI 检查中断，尚未验证。本版没有调整辨识器／参数，也没有新增云端服务或 schema；未开启原生 Excel。
+
+GUI checks confirmed only anonymous-workspace launch and visibility of a 260-record review list. Task-center and answer-editor GUI checks were interrupted and remain unverified. The detector, parameters and schema are unchanged, no cloud service was added, and native Excel was not opened.
+
+两份原始测试 PDF 的独立答案实测**未通过辨识验收**：共 202 个目标，198 个真值可评分，4 个不确定；已配置自动辨识的 151 个可评分目标均未产生整题候选，覆盖率 **0/151 = 0%**。另有 47 个可评分人工模式目标。所有题型候选数均为零，因此候选准确率无分母、无法计算，不能称为 100%。两次任务均到达 `READY` 并保存完整报告与摘要，随后原生测试进程均以 `-1073740791` 退出，完整生命周期测试失败，故障模块及原因仍未知。[分题型测量](output/validation/0.3.2-input-accuracy.json)与[诊断摘要](output/validation/0.3.2-recognition-diagnostics.json)独立于上述 216 项匿名基线回归。
+
+The separate original-PDF measurement **failed recognition acceptance**: 202 targets, 198 independently scorable and four uncertain. None of the 151 scorable targets configured for automatic recognition produced a complete question candidate: **0/151 = 0% coverage**. Another 47 scorable targets were intentionally manual. Every type produced zero candidates, so candidate precision has no denominator and is undefined, not 100%. Both jobs reached `READY` and saved complete reports/digests before their native test processes exited with `-1073740791`; the full lifecycle tests failed, and the fault module/cause remains unknown. See the [per-type measurement](output/validation/0.3.2-input-accuracy.json) and [diagnostics](output/validation/0.3.2-recognition-diagnostics.json), reported separately from the 216-test anonymous baseline.
+
+实测采用一次固定人工区域／核心设置，144 DPI、原始 PDF 方向，同一份已填写文件分别导入为模板与问卷；没有人工答案回填。这是有人工校准条件的单轮测量，不证明新扫描的对齐或泛化能力。主要缺口包括小方框低于固定 14 像素门槛、数字核心边界／表格线／裁切干扰、数字日期 OCR，以及未随包的中文竖排子模型警告；警告不能证明原生退出原因。原始文件和含答案的派生资料不进入 Git。
+
+Each document used one frozen set of manually selected regions/cores, 144 DPI and raw PDF orientation, with the same filled document imported as template and submission. No human answers were credited as machine output. This conditional single-pass measurement does not establish alignment or generalization to new scans. Gaps include the fixed 14-pixel checkbox minimum, printed-core boundaries/table lines/cropping, number/date OCR and missing bundled Chinese vertical submodels. That warning does not establish the native-exit cause. Original documents and answer-bearing derivatives are excluded from Git.
+
+0.3.1-dev 的历史记录：2026-10-22 完成 **166 项不同自动化回归，零失败、错误或跳过**，并成功构建自包含程序及 MSI。新增分页／搜索、真实任务计数、跨页选择、过期响应、固定修订重跑、快照摘要及 12 项编辑恢复安全测试；既有答案、候选来源与四表契约回归通过。该轮没有重复开启 Microsoft Excel。
+
+Historical 0.3.1-dev results: on 2026-10-22, **all 166 distinct regression tests passed**, with no failures, errors or skips. The self-contained application and MSI built successfully. Paging/search, global task counts, cross-page selection, stale responses, pinned reruns, snapshot summaries and 12 recovery-safety tests are covered, alongside existing answer/provenance/four-sheet contracts. Native Microsoft Excel was not opened.
 
 新的 1,000 份加密记录读负载逐笔对账及重开检查通过：每份 10 个页槽、100 个答案目标，142 份缺末页，无实体影像。SQL 首页 50 笔用时 1,053.1ms，同负载旧式完整工作台摘要 5,696.0ms；五种搜索 919.2–1,050.4ms。先完整读取后查 SQL，暖缓存、每操作一次；不代表冷启动、GUI、影像、OCR 或采集速度。详见 [0.3.1 交付说明](docs/releases/0.3.1-dev.md) 与[量测摘要](output/validation/0.3.1-query-1000.json)。
 
@@ -108,12 +133,14 @@ Historical scale tests reused synthetic images and do not establish real-scan th
 
 - [工作阶段 / Progress and evidence](工作阶段.md)
 - [规划 / Product and architecture plan](规划.md)
-- [0.3.1 current delivery / 最新交付](docs/releases/0.3.1-dev.md) / [0.3.0 earlier delivery](docs/releases/0.3.0-dev.md) / [0.2 release notes](docs/releases/0.2.0-dev.md) / [0.1 archive notes](docs/releases/0.1.0-dev.md)
+- [0.3.2 current delivery / 最新交付](docs/releases/0.3.2-dev.md) / [0.3.1 archive / 前版交付](docs/releases/0.3.1-dev.md) / [0.3.0 earlier delivery](docs/releases/0.3.0-dev.md) / [0.2 release notes](docs/releases/0.2.0-dev.md) / [0.1 archive notes](docs/releases/0.1.0-dev.md)
+- [0.3.2 regression](output/validation/0.3.2-regression.json) / [0.3.2 package checks](output/validation/0.3.2-package.json) / [Build summary](output/validation/build-summary.json)
+- [0.3.2 original-input answer measurement](output/validation/0.3.2-input-accuracy.json) / [Recognition and native-process diagnostics](output/validation/0.3.2-recognition-diagnostics.json)
 - [0.3.1 regression](output/validation/0.3.1-regression.json) / [SQL read workload](output/validation/0.3.1-query-1000.json) / [Package checks](output/validation/0.3.1-package.json)
 - [0.3.1 GitHub source/identity verification and preserved Releases](output/validation/0.3.1-github.json)
 - [0.3 regression](output/validation/0.3.0-regression.json) / [Anonymous recognition](output/validation/0.3.0-recognition.json) / [Independent answer and OOXML checks](output/validation/0.3.0-answer-workbooks.json) / [Package checks](output/validation/0.3.0-package.json)
 - [Limited desktop smoke](output/validation/0.3.0-desktop-smoke.json)
 - [1,000-record workload](output/validation/0.3.0-scale.json) / [Scale answer and OOXML checks](output/validation/0.3.0-scale-workbooks.json)
-- [Current build summary](output/validation/build-summary.json) / [0.3.0 historical summary](output/validation/build-summary-0.3.0.json) / [0.2 historical build summary](output/validation/build-summary-0.2.0.json)
+- [Latest completed build summary](output/validation/build-summary.json) / [0.3.1 historical summary](output/validation/build-summary-0.3.1.json) / [0.3.0 historical summary](output/validation/build-summary-0.3.0.json) / [0.2 historical build summary](output/validation/build-summary-0.2.0.json)
 - [Verified GitHub publication](output/validation/github-publication.json)
 - [Third-party inventory](runtime/THIRD_PARTY_NOTICES.txt); component licenses/manifests are retained under `runtime/`. Source provenance is recorded in each applicable module.

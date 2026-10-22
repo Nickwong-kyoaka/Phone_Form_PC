@@ -240,7 +240,11 @@ internal class DesktopSubmissionRepository(private val db: DesktopRepositories) 
     } }
     override suspend fun retryJob(jobId: String) { db.write {
         val job = requireNotNull(get<ProcessingJob>("preparation", jobId)); active(job.projectId)
-        require(get<Submission>("submission", job.submissionId)?.currentRevisionId == job.submissionRevisionId)
+        val submission=get<Submission>("submission",job.submissionId)
+        val revision=get<SubmissionRevision>("revision",job.submissionRevisionId)
+        if (prep(job.submissionRevisionId)?.id != job.id || submission == null || submission.discarded ||
+            submission.projectId != job.projectId || submission.currentRevisionId != job.submissionRevisionId ||
+            revision == null || revision.submissionId != submission.id || revision.projectId != job.projectId) throw StaleSubmissionException()
         if (job.status in listOf(PreparationJobStatus.FAILED, PreparationJobStatus.PAUSED)) { put("preparation", job.id, job.projectId, job.copy(status = PreparationJobStatus.QUEUED, runToken = null, processSessionId = null, error = null)); wake(job.projectId) }
     } }
 }

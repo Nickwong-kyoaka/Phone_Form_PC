@@ -21,7 +21,6 @@ import androidx.compose.ui.window.*
 import com.phoneform.ai.core.model.*
 import kotlinx.coroutines.*
 import java.io.File
-import javax.imageio.ImageIO
 
 val BrandBlue = Color(0xff2563eb)
 
@@ -220,19 +219,21 @@ val LocalEditorEnabled = staticCompositionLocalOf { true }
 }
 
 @Composable fun PageThumbnail(controller:Controller,page:SamplePage?,label:String,selected:Boolean,onClick:()->Unit,modifier:Modifier=Modifier) {
-    var bitmap by remember(page?.id,page?.revision,page?.thumbnailPath){mutableStateOf<ImageBitmap?>(null)}
-    LaunchedEffect(page?.id,page?.revision,page?.thumbnailPath) {
-        bitmap=page?.let {withContext(Dispatchers.IO){runCatching {
-            controller.workspace.assets.readBytes(it.thumbnailPath).inputStream().use(ImageIO::read)?.toComposeImageBitmap()
-        }.getOrNull()}}
-    }
+    val language=controller.state.value.settings.language ?: if(java.util.Locale.getDefault().language=="en")UiLanguage.ENGLISH else UiLanguage.TRADITIONAL
+    val display=rememberDisplayImage(controller,controller.state.value.project?.project?.id,page,DisplayImageSource.THUMBNAIL)
     Column(modifier.fillMaxWidth().clip(RoundedCornerShape(6.dp))
         .background(if(selected)MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surface)
         .border(if(selected)2.dp else 1.dp,if(selected)MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant,RoundedCornerShape(6.dp))
         .clickable(onClick=onClick).padding(10.dp),horizontalAlignment=Alignment.CenterHorizontally,verticalArrangement=Arrangement.spacedBy(6.dp)) {
         Box(Modifier.fillMaxWidth().height(100.dp).background(MaterialTheme.colorScheme.surfaceVariant,RoundedCornerShape(4.dp)),contentAlignment=Alignment.Center) {
-            val loaded=bitmap
+            val loaded=display.bitmap
             if(loaded!=null)Image(loaded,label,Modifier.fillMaxSize().padding(4.dp))
+            else if(display.error!=null)Column(horizontalAlignment=Alignment.CenterHorizontally) {
+                Text(tr(language,"縮圖無法開啟","缩略图无法打开","Thumbnail unavailable"),style=MaterialTheme.typography.labelSmall)
+                val oversized=display.error=="THUMBNAIL_REBUILD_REQUIRED" || display.error=="IMAGE_TOO_LARGE"
+                TextButton(onClick={display.retry(oversized)},contentPadding=PaddingValues(2.dp)) {Text(if(oversized)tr(language,"重建縮圖","重建缩略图","Rebuild thumbnail")else tr(language,"重試","重试","Retry"),style=MaterialTheme.typography.labelSmall)}
+            }
+            else if(display.loading)CircularProgressIndicator(Modifier.size(20.dp),strokeWidth=2.dp)
             else AppIcon("document",Modifier.size(28.dp),MaterialTheme.colorScheme.onSurfaceVariant)
         }
         Text(label,style=MaterialTheme.typography.bodySmall,maxLines=2,overflow=TextOverflow.Ellipsis)
@@ -265,9 +266,10 @@ val LocalEditorEnabled = staticCompositionLocalOf { true }
     Text(text,Modifier.background(color.copy(alpha=.1f),RoundedCornerShape(4.dp)).padding(horizontal=7.dp,vertical=3.dp),color=color,style=MaterialTheme.typography.bodySmall,maxLines=1)
 }
 
-@Composable fun AppDialog(title:String,close:()->Unit,width:Dp=700.dp,height:Dp=700.dp,content:@Composable ColumnScope.()->Unit) {
+@Composable fun AppDialog(title:String,close:()->Unit,width:Dp=700.dp,height:Dp=700.dp,
+    onPreviewKeyEvent:(androidx.compose.ui.input.key.KeyEvent)->Boolean={false},content:@Composable ColumnScope.()->Unit) {
     val available=java.awt.GraphicsEnvironment.getLocalGraphicsEnvironment().maximumWindowBounds
-    Dialog(onCloseRequest=close,title=title,state=rememberDialogState(width=minOf(width,(available.width*.9f).dp),height=minOf(height,(available.height*.9f).dp))) {
+    Dialog(onCloseRequest=close,title=title,state=rememberDialogState(width=minOf(width,(available.width*.9f).dp),height=minOf(height,(available.height*.9f).dp)),onPreviewKeyEvent=onPreviewKeyEvent) {
         Surface {Column(Modifier.fillMaxSize(),content=content)}
     }
 }

@@ -11,22 +11,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ImageBitmap
-import androidx.compose.ui.graphics.toComposeImageBitmap
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.*
 import com.phoneform.ai.core.model.*
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.withContext
 
 @Composable fun CornerDialog(controller:Controller,page:SamplePage,language:UiLanguage,close:()->Unit,save:(List<NormalizedPoint>)->Unit) {
-    var image by remember(page.id){mutableStateOf<ImageBitmap?>(null)}
+    val display=rememberDisplayImage(controller,controller.state.value.project?.project?.id,page)
+    val image=display.bitmap
     var corners by remember(page.id){mutableStateOf(listOf(NormalizedPoint(.03f,.03f),NormalizedPoint(.97f,.03f),NormalizedPoint(.97f,.97f),NormalizedPoint(.03f,.97f)))}
     var active by remember{mutableStateOf(-1)}
-    var error by remember(page.id){mutableStateOf(false)}
-    var reload by remember(page.id){mutableIntStateOf(0)}
-    LaunchedEffect(page.renderPath,reload){error=false;image=null;try{image=withContext(Dispatchers.IO){controller.loadImage(page).toComposeImageBitmap()}}catch(cancelled:CancellationException){throw cancelled}catch(_:Exception){error=true}}
     AppDialog(tr(language,"四角校正","四角校正","Perspective correction"),close,width=940.dp,height=800.dp) {Column(Modifier.fillMaxSize().padding(20.dp),verticalArrangement=Arrangement.spacedBy(10.dp)){
         Text(tr(language,"四角校正","四角校正","Perspective correction"),style=MaterialTheme.typography.titleLarge)
         Text(tr(language,"拖動控制點到紙張四角，依左上 → 右上 → 右下 → 左下排列。","拖动控制点到纸张四角，按左上 → 右上 → 右下 → 左下排列。","Drag the handles to the paper corners: top-left → top-right → bottom-right → bottom-left."),style=MaterialTheme.typography.bodySmall,color=MaterialTheme.colorScheme.onSurfaceVariant)
@@ -37,7 +30,7 @@ import kotlinx.coroutines.withContext
         }){val scale=minOf(size.width/bitmap.width,size.height/bitmap.height);val w=bitmap.width*scale;val h=bitmap.height*scale;val origin=Offset((size.width-w)/2,(size.height-h)/2)
             drawImage(bitmap,dstOffset=IntOffset(origin.x.toInt(),origin.y.toInt()),dstSize=IntSize(w.toInt(),h.toInt()))
             val points=corners.map {Offset(origin.x+it.x*w,origin.y+it.y*h)};points.indices.forEach {i->drawLine(Color(0xff2563eb),points[i],points[(i+1)%4],3f);drawCircle(Color.White,10.dp.toPx(),points[i]);drawCircle(if(i==active)Color(0xfff59e0b)else Color(0xff2563eb),7.dp.toPx(),points[i])}
-        }}?:Box(Modifier.weight(1f).fillMaxWidth(),contentAlignment=Alignment.Center){if(error)Column(horizontalAlignment=Alignment.CenterHorizontally){Text(tr(language,"無法開啟影像","无法打开图像","Image unavailable"));TextButton(onClick={reload++}){Text(tr(language,"重試","重试","Retry"))}}else CircularProgressIndicator(Modifier.size(28.dp))}
+        }}?:Box(Modifier.weight(1f).fillMaxWidth(),contentAlignment=Alignment.Center){if(display.error!=null)Column(horizontalAlignment=Alignment.CenterHorizontally){Text(tr(language,"無法開啟影像","无法打开图像","Image unavailable"));TextButton(onClick={display.retry(false)}){Text(tr(language,"重試","重试","Retry"))}}else CircularProgressIndicator(Modifier.size(28.dp))}
         HorizontalDivider()
         Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically){TextButton(onClick=close){Text(tr(language,"取消","取消","Cancel"))};Spacer(Modifier.weight(1f));Button(onClick={save(corners)},enabled=image!=null){Text(tr(language,"清除標註並套用","清除标注并应用","Clear annotations and apply"))}}
     }}

@@ -81,7 +81,7 @@ fun main() {
             Item(tr(language,"退出","退出","Exit"), onClick = { exitSafely() })
         })
     }
-    Window(visible = visible, title = "PhoneForm AI PC · 0.3.1-dev",
+    Window(visible = visible, title = "PhoneForm AI PC · 0.3.2-dev",
         state = rememberWindowState(width = minOf(1280,workArea.width).dp, height = minOf(860,workArea.height-36).dp),
         onCloseRequest = {
             if (snapshot.settings.closeBehavior == CloseBehavior.SYSTEM_TRAY && systemTraySupported) visible = false else exitSafely()
@@ -183,7 +183,11 @@ fun message(language: UiLanguage, code: String): String = when(code.substringBef
     "RECOGNITION_EVIDENCE_CHANGED","CANDIDATE_REFERENCE_CHANGED" -> tr(language,"候選證據已改變，未套用舊候選。請重新辨識或人工輸入。","候选证据已改变，未应用旧候选。请重新识别或人工输入。","Candidate evidence changed. The old candidate was not applied. Rerun or enter a human answer.")
     "REVIEW_ALREADY_CONFIRMED","QUESTIONNAIRE_CONFIRMED" -> tr(language,"此份已確認，未重新辨識。已保存答案保留。","该份已确认，未重新识别。已保存答案保留。","This questionnaire is confirmed and was not rerun. Saved answers are retained.")
     "REVIEW_INCOMPLETE" -> tr(language,"請先處理全部未完成或無效答案。","请先处理全部未完成或无效答案。","Resolve all unhandled or invalid answers first.")
-    "EDITOR_RECOVERY_PENDING" -> tr(language,"仍有保留的題目或整組編輯，請先完成或明確放棄後再確認。","仍有保留的题目或整组编辑，请先完成或明确放弃后再确认。","Retained question or group edits need attention. Complete or explicitly discard them before confirming.")
+    "EDITOR_RECOVERY_PENDING" -> tr(language,"編輯恢復尚未完成。請等候讀取，或完成／明確放棄保留的編輯後再保存。","编辑恢复尚未完成。请等待读取，或完成／明确放弃保留的编辑后再保存。","Editor recovery needs attention. Wait for loading, or complete / explicitly discard retained edits before saving.")
+    "EDITOR_RECOVERY_CORRUPT" -> tr(language,"恢復資料格式不完整，原輸入仍保留。請重試或明確放棄後重新開始。","恢复数据格式不完整，原输入仍保留。请重试或明确放弃后重新开始。","Recovery data is incomplete. Its source is retained. Retry or explicitly discard it to start again.")
+    "TASK_RETRY_UNAVAILABLE","TASK_OWNER_UNAVAILABLE" -> tr(language,"此任務已被更新或移除。請重新讀取任務列表。","此任务已更新或移除。请重新读取任务列表。","This task has changed or was removed. Refresh the task list.")
+    "THUMBNAIL_REBUILD_REQUIRED" -> tr(language,"此縮圖需要重新建立，請按「重建縮圖」。","此缩略图需要重新生成，请按“重建缩略图”。","This thumbnail needs rebuilding. Choose Rebuild thumbnail.")
+    "REVIEW_RELOADING" -> tr(language,"正在重新讀取本份答案，完成後再操作。","正在重新读取本份答案，完成后再操作。","This questionnaire's answers are reloading. Wait for loading to finish.")
     "ACTION_BUSY" -> tr(language,"操作仍在進行，完成後可再次退出。","操作仍在进行，完成后可再次退出。","An operation is still running. Exit again when it finishes.")
     "TEMPLATE_LOCKED","TEMPLATE_STRUCTURE_LOCKED" -> tr(language,"此範本已鎖定，請另建專案使用不同問卷結構。","此模板已锁定，请另建项目使用不同问卷结构。","This template is locked. Create a project for a different questionnaire design.")
     "PAGE_SLOTS_INVALID","NO_PAGES" -> tr(language,"請選擇頁面並核對頁槽。","请选择页面并核对页槽。","Select pages and check their slots.")

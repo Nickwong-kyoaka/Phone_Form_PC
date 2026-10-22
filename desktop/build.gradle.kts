@@ -26,7 +26,7 @@ compose.desktop {
         nativeDistributions {
             targetFormats(TargetFormat.Msi)
             packageName = "PhoneForm AI PC"
-            packageVersion = "0.3.1"
+            packageVersion = "0.3.2"
             description = "Offline questionnaire review and Excel export"
             vendor = "PhoneForm AI"
             modules("java.sql", "java.naming", "java.desktop", "java.xml", "jdk.unsupported", "jdk.crypto.ec")

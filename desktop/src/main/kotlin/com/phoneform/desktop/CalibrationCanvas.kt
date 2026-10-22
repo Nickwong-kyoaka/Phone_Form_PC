@@ -13,15 +13,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.clipRect
-import androidx.compose.ui.graphics.toComposeImageBitmap
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.*
 import com.phoneform.ai.core.model.*
-import kotlinx.coroutines.*
 import kotlin.math.abs
 
 private data class CalibrationDrag(val kind:String,val index:Int,val start:Offset,val grid:CalibrationGrid?,
@@ -31,14 +28,9 @@ private data class CalibrationDrag(val kind:String,val index:Int,val start:Offse
     settings:List<QuestionRecognitionSettings>,selectedOptionId:String?,language:UiLanguage,
     onSelectOption:(String)->Unit,onCommit:(List<QuestionRecognitionSettings>,CalibrationGrid?)->Unit,
     modifier:Modifier=Modifier,enabled:Boolean=true,extraOverlays:List<NormalizedRect> = emptyList(),scalarQuestionId:String?=null) {
-    var image by remember(page.id,page.revision) { mutableStateOf<ImageBitmap?>(null) }
-    var imageFailed by remember(page.id,page.revision) { mutableStateOf(false) }
-    var reload by remember(page.id) { mutableIntStateOf(0) }
-    LaunchedEffect(page.id,page.revision,reload) { image=null;imageFailed=false
-        try { image=withContext(Dispatchers.IO) { controller.loadImage(page).let { source->try { source.toComposeImageBitmap() } finally { source.flush() } } } }
-        catch(e:CancellationException){throw e}catch(_:Exception){imageFailed=true}
-    }
     val projectId=controller.state.value.project?.project?.id
+    val display=rememberDisplayImage(controller,projectId,page)
+    val image=display.bitmap
     val savedView=remember(projectId,page.id) { controller.ui.value.projects[projectId]?.canvasViews?.get(page.id)?.normalized() ?: CanvasViewState() }
     var zoom by remember(page.id){mutableFloatStateOf(savedView.zoom)}
     var offset by remember(page.id){mutableStateOf(Offset(savedView.offsetX,savedView.offsetY))}
@@ -66,7 +58,7 @@ private data class CalibrationDrag(val kind:String,val index:Int,val start:Offse
         HorizontalDivider()
         val bitmap=image
         if(bitmap==null) Box(Modifier.weight(1f).fillMaxWidth(),contentAlignment=Alignment.Center) {
-            if(imageFailed) TextButton(onClick={reload++}){Text(tr(language,"影像無法開啟，重試","图像无法打开，重试","Image unavailable · Retry"))} else CircularProgressIndicator(Modifier.size(28.dp))
+            if(display.error!=null) TextButton(onClick={display.retry(false)}){Text(tr(language,"影像無法開啟，重試","图像无法打开，重试","Image unavailable · Retry"))} else CircularProgressIndicator(Modifier.size(28.dp))
         } else Canvas(Modifier.weight(1f).fillMaxWidth().background(MaterialTheme.colorScheme.surfaceVariant).pointerInput(page.id,bitmap,zoom,tool,selectedOptionId,enabled,hitPx) {
             fun fit():Pair<Offset,Size> { val scale=minOf(size.width.toFloat()/bitmap.width,size.height.toFloat()/bitmap.height)*zoom
                 val s=Size(bitmap.width*scale,bitmap.height*scale)
