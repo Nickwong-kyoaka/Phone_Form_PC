@@ -1,0 +1,61 @@
+{
+  "version": "0.3.1-dev",
+  "checkedAt": "2026-10-22T16:48:59.8583985+08:00",
+  "repository": "https://github.com/Nickwong-kyoaka/Phone_Form_PC",
+  "verifiedSourceCommit": "a4d3efa434d5cb256cd6918efb56e8d88afe5ad4",
+  "sourceAuthor": "Nickwong-kyoaka",
+  "sourceEmail": "wongnick.kyoaka@gmail.com",
+  "githubAuthor": "Nickwong-kyoaka",
+  "githubCommitter": "Nickwong-kyoaka",
+  "mainMatchedSourceCommit": true,
+  "sourceTreeBlobs": 154,
+  "generatedQuestionnaireOrPrivateFilesInLatestTree": 0,
+  "releasesCreated": 0,
+  "preservedReleases": [
+    {
+      "tag": "v0.1.0-dev",
+      "commit": "3f69da3ec8ae73a1dd49fea4dc7b6af6b51f3da9",
+      "releaseId": 419423816,
+      "assets": [
+        {
+          "id": 662134886,
+          "name": "PhoneForm-AI-PC-0.1.0-dev.msi",
+          "bytes": 159695075,
+          "digest": "sha256:e00ef974557c3d7520b6530b97f367dc9ab41aa65496b165d5e4fee2aa38c9ea",
+          "uploader": "Nickwong-kyoaka"
+        },
+        {
+          "id": 662135999,
+          "name": "PhoneForm-AI-PC-0.1.0-dev.msi.sha256",
+          "bytes": 97,
+          "digest": "sha256:71120c1091b90617dbdec98a5e113735d4774eda55da7293ded01552a0672502",
+          "uploader": "Nickwong-kyoaka"
+        }
+      ],
+      "tagObjectSha": "4591940917e149bccd3be25e56087c223945e4ac"
+    },
+    {
+      "tag": "v0.2.0-dev",
+      "commit": "6a1113d673be23593d6d3df9b5191e296eb3ff45",
+      "releaseId": 419424252,
+      "assets": [
+        {
+          "id": 662136155,
+          "name": "PhoneForm-AI-PC-0.2.0-dev.msi",
+          "bytes": 160411871,
+          "digest": "sha256:95a827947aa34afe1a1587f62656e41631fe901340861d0ba3ce4b0a5aa0c240",
+          "uploader": "Nickwong-kyoaka"
+        },
+        {
+          "id": 662137190,
+          "name": "PhoneForm-AI-PC-0.2.0-dev.msi.sha256",
+          "bytes": 97,
+          "digest": "sha256:634e8c387f8803e8b14546e0ab1930d3f1fb7763018acb0815440a96e40052d3",
+          "uploader": "Nickwong-kyoaka"
+        }
+      ],
+      "tagObjectSha": "da3db49803d060f2c2ff8917b5492908702507ef"
+    }
+  ],
+  "scope": "Public API verification of implementation commit on main before a documentation-only follow-up. Annotated tag objects and their peeled commits match the original tags. Original release and asset identities/digests unchanged. New MSI remains local."
+}

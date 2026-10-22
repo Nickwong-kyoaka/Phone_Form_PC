@@ -110,6 +110,7 @@ Historical scale tests reused synthetic images and do not establish real-scan th
 - [规划 / Product and architecture plan](规划.md)
 - [0.3.1 current delivery / 最新交付](docs/releases/0.3.1-dev.md) / [0.3.0 earlier delivery](docs/releases/0.3.0-dev.md) / [0.2 release notes](docs/releases/0.2.0-dev.md) / [0.1 archive notes](docs/releases/0.1.0-dev.md)
 - [0.3.1 regression](output/validation/0.3.1-regression.json) / [SQL read workload](output/validation/0.3.1-query-1000.json) / [Package checks](output/validation/0.3.1-package.json)
+- [0.3.1 GitHub source/identity verification and preserved Releases](output/validation/0.3.1-github.json)
 - [0.3 regression](output/validation/0.3.0-regression.json) / [Anonymous recognition](output/validation/0.3.0-recognition.json) / [Independent answer and OOXML checks](output/validation/0.3.0-answer-workbooks.json) / [Package checks](output/validation/0.3.0-package.json)
 - [Limited desktop smoke](output/validation/0.3.0-desktop-smoke.json)
 - [1,000-record workload](output/validation/0.3.0-scale.json) / [Scale answer and OOXML checks](output/validation/0.3.0-scale-workbooks.json)

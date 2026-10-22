@@ -1,7 +1,7 @@
 {
   "appVersion": "0.3.1-dev",
   "installerVersion": "0.3.1",
-  "checkedAt": "2026-10-22T16:45:34.7399250+08:00",
+  "checkedAt": "2026-10-22T16:45:34.739925+08:00",
   "platform": "Windows 11 x64",
   "tests": {
     "total": 166,
@@ -451,5 +451,7 @@
     "Clean Windows installation/upgrade and remaining physical-machine failure checks",
     "Real-scan generalization and independent image/OCR throughput"
   ],
-  "previousSummary": "output/validation/build-summary-0.3.0.json"
+  "previousSummary": "output/validation/build-summary-0.3.0.json",
+  "sourceCommit": "a4d3efa434d5cb256cd6918efb56e8d88afe5ad4",
+  "githubVerification": "output/validation/0.3.1-github.json"
 }
