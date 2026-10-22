@@ -1,0 +1,45 @@
+{
+  "version": "0.3.0-dev",
+  "checkedAt": "2026-10-22T15:25:32.9308925+08:00",
+  "scope": "Self-contained distribution inventory and bundled Java launcher execution; not clean-machine installation",
+  "bundledJavaExecuted": true,
+  "resourceHashesMatch": true,
+  "applicationJarsChecked": 6,
+  "files": [
+    {
+      "path": "models/eng.traineddata",
+      "bytes": 15400601,
+      "sha256": "8280aed0782fe27257a68ea10fe7ef324ca0f8d85bd2fd145d1c2b560bcb66ba"
+    },
+    {
+      "path": "models/chi_sim.traineddata",
+      "bytes": 13077423,
+      "sha256": "4fef2d1306c8e87616d4d3e4c6c67faf5d44be3342290cf8f2f0f6e3aa7e735b"
+    },
+    {
+      "path": "models/chi_tra.traineddata",
+      "bytes": 12985735,
+      "sha256": "1aa60488574cafa69486d919284f079ca9b68fcc7f6ad8dc1ff1b318dfd97028"
+    },
+    {
+      "path": "models/LICENSE",
+      "bytes": 10173,
+      "sha256": "a6cba85bc92e0cff7a450b1d873c0eaa2e9fc96bf472df0247a26bec77bf3ff9"
+    },
+    {
+      "path": "opencv/opencv-4120.jar",
+      "bytes": 826868,
+      "sha256": "e5e9f0248daecd6b29eb6947d256ebaa2918e3fd555a01cf182ff3e811743727"
+    },
+    {
+      "path": "opencv/opencv_java4120.dll",
+      "bytes": 53010432,
+      "sha256": "aca5d9a9bc8067434d793402269a18aa18a4e033c96d44707686d30ff162abb9"
+    },
+    {
+      "path": "THIRD_PARTY_NOTICES.txt",
+      "bytes": 2306,
+      "sha256": "04fb7c3d1d14e8941c4f85926c54df9e13754ae9c98afe3f8061886e2581e762"
+    }
+  ]
+}

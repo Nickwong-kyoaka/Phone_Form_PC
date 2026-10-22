@@ -6,6 +6,7 @@ import com.phoneform.desktop.data.DesktopRepositories
 import com.phoneform.desktop.data.DesktopUiPreferencesStore
 import com.phoneform.desktop.security.*
 import com.phoneform.desktop.vision.DesktopVision
+import com.phoneform.desktop.vision.RecognitionResult
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.*
@@ -54,6 +55,9 @@ class Controller(val workspace: SecureWorkspace, val modelDir: Path, startWorker
     private val pageOwners = java.util.concurrent.ConcurrentHashMap<String, String>()
     private val actions = Mutex()
     @Volatile private var closing = false
+    @Volatile private var templateCommit: Pair<String, suspend () -> Unit>? = null
+    fun registerTemplateCommit(owner: String, commit: suspend () -> Unit) { templateCommit = owner to commit }
+    fun unregisterTemplateCommit(owner: String) { if (templateCommit?.first == owner) templateCommit = null }
     private data class PendingEditor(val projectId: String?, val fields: java.util.concurrent.ConcurrentHashMap<String,String> = java.util.concurrent.ConcurrentHashMap(),
         val version: java.util.concurrent.atomic.AtomicLong = java.util.concurrent.atomic.AtomicLong(),
         val savedVersion: java.util.concurrent.atomic.AtomicLong = java.util.concurrent.atomic.AtomicLong())
@@ -297,8 +301,68 @@ class Controller(val workspace: SecureWorkspace, val modelDir: Path, startWorker
     }
     suspend fun saveTemplate(draft: TemplateDraft) = repositories.templates.saveDraft(draft)
     suspend fun confirmTemplate() {
+        templateCommit?.second?.invoke()
         val draft = templateDraft()
         repositories.templates.confirmDraft(draft.projectId, draft.id, draft.revision)
+    }
+    suspend fun loadRecognitionDraft(): RecognitionProfileDraft {
+        val version = requireNotNull(state.value.project?.project?.templateVersionId) { "TEMPLATE_REQUIRED" }
+        return repositories.intelligence.beginRecognitionProfileDraft(version)
+    }
+    suspend fun saveRecognitionDraft(draft: RecognitionProfileDraft): RecognitionProfileDraft {
+        require(draft.projectId == selectedProjectId) { "PROJECT_CHANGED" }
+        return repositories.intelligence.saveRecognitionProfileDraft(draft)
+    }
+    suspend fun confirmRecognitionDraft(draft: RecognitionProfileDraft): TemplateRecognitionProfile {
+        val saved = saveRecognitionDraft(draft)
+        return confirmSavedRecognitionDraft(saved)
+    }
+    suspend fun confirmSavedRecognitionDraft(saved: RecognitionProfileDraft): TemplateRecognitionProfile {
+        require(saved.projectId == selectedProjectId) { "PROJECT_CHANGED" }
+        return repositories.intelligence.confirmRecognitionProfileDraft(saved.id, saved.revision, saved.baseProfileId,
+            "profile:${saved.id}:${saved.revision}")
+    }
+    suspend fun discardRecognitionDraft(draft: RecognitionProfileDraft) {
+        require(draft.projectId == selectedProjectId) { "PROJECT_CHANGED" }
+        repositories.intelligence.discardRecognitionProfileDraft(draft.id, draft.revision)
+    }
+    suspend fun previewRecognition(draft: RecognitionProfileDraft, pageId: String, questionIds: Set<String>? = null): RecognitionResult =
+        ProjectOperationGate.shared.withLease(draft.projectId) {
+            val template = requireNotNull(repositories.templates.getVersion(draft.templateVersionId)) { "TEMPLATE_REQUIRED" }
+            require(draft.projectId == selectedProjectId && template.projectId == draft.projectId) { "PROJECT_CHANGED" }
+            require(draft.pageFingerprints == RecognitionBindings.pageFingerprints(template.document)) { "RECOGNITION_PAGE_CHANGED" }
+            val page = template.document.pages.single { it.id == pageId }
+            val questions = template.document.questions.filter { it.pageId == pageId && (questionIds == null || it.id in questionIds) }
+            require(questions.isNotEmpty() && (questionIds == null || questions.map { it.id }.toSet() == questionIds)) { "RECOGNITION_SETTINGS_INVALID" }
+            val selectedIds = questions.map { it.id }.toSet()
+            val settings = draft.settings.filter { it.questionId in selectedIds }
+            require(settings.map { it.questionId }.toSet() == selectedIds &&
+                RecognitionBindings.validate(template.document, settings).isEmpty()) { "RECOGNITION_SETTINGS_INVALID" }
+            val profile = TemplateRecognitionProfile(template.id, draft.engineVersion, draft.pageFingerprints,
+                id = "preview:${draft.id}", projectId = draft.projectId, settings = settings,
+                parametersVersion = draft.parametersVersion)
+            val image = loadImage(page)
+            try { vision.recognize(page, image, page, image, questions,
+                requireNotNull(repositories.projects.getProject(draft.projectId)).project.questionnaireLanguage, profile, null,
+                hash(workspace.assets.readBytes(page.renderPath))) }
+            finally { image.flush() }
+        }
+    suspend fun suggestPrintedCores(pageId: String, options: List<OptionMarkRegion>): List<OptionMarkRegion> {
+        val projectId = requireNotNull(selectedProjectId)
+        return ProjectOperationGate.shared.withLease(projectId) {
+            val document = state.value.templateDraft ?: requireNotNull(state.value.template).document
+            val page = document.pages.single { it.id == pageId }
+            val image = loadImage(page)
+            try { vision.suggestPrintedCores(image, options, requireNotNull(state.value.project).project.questionnaireLanguage) }
+            finally { image.flush() }
+        }
+    }
+    suspend fun rerunRecognition(submissionId: String): RecognitionJob {
+        val review = requireNotNull(repositories.intelligence.getReview(submissionId)) { "REVISION_UNAVAILABLE" }
+        require(review.project.project.id == selectedProjectId && review.confirmation == null) { "REVIEW_ALREADY_CONFIRMED" }
+        val profile = requireNotNull(repositories.intelligence.getRecognitionProfile(review.template.id)) { "RECOGNITION_SETTINGS_REQUIRED" }
+        return repositories.intelligence.rerunRecognition(submissionId, review.revision.id, profile.id,
+            review.job?.id, newId())
     }
     suspend fun discardTemplate() {
         val draft = requireNotNull(state.value.templateDraft)
@@ -355,7 +419,7 @@ class Controller(val workspace: SecureWorkspace, val modelDir: Path, startWorker
         val path = "pages/$id/base.png"; savePng(path, image)
         val thumbnailPath = "pages/$id/thumb.png"; saveThumbnail(thumbnailPath, image)
         return SamplePage(id, asset, index, position, path, thumbnailPath, image.width, image.height,
-            processing = PageProcessingConfig(PageProcessingMode.AUTO_LIGHT))
+            processing = PageProcessingSpec(PageProcessingMode.AUTO_LIGHT))
     }
     fun loadImage(page: SamplePage): BufferedImage {
         val owner = ProjectOperationGate.shared.currentProjectId() ?: pageOwners[page.id]
@@ -627,6 +691,9 @@ class Controller(val workspace: SecureWorkspace, val modelDir: Path, startWorker
     }
 
     private suspend fun recognizeSubmission(job: RecognitionJob) {
+        val profile = job.profileId?.let { repositories.intelligence.getRecognitionProfileById(it) }
+            ?: error("RECOGNITION_SETTINGS_REQUIRED")
+        require(profile.engineVersion == DesktopVision.VERSION) { "RECOGNITION_ENGINE_UNSUPPORTED" }
         val review = repositories.intelligence.getReview(job.submissionId) ?: error("REVISION_UNAVAILABLE")
         if (review.revision.id != job.submissionRevisionId || !repositories.intelligence.isRecognitionClaimValid(job, true)) return
         val completedSlots = job.completedPageIds.toMutableSet()
@@ -639,7 +706,8 @@ class Controller(val workspace: SecureWorkspace, val modelDir: Path, startWorker
             pageOwners[templatePage.id] = job.projectId; pageOwners[page.image.id] = job.projectId
             val templateImage = loadImage(templatePage); val submittedImage = loadImage(page.image)
             val result = try { vision.recognize(templatePage, templateImage, page.image, submittedImage,
-                review.template.document.questions.filter { it.pageId == templatePage.id }, review.project.project.questionnaireLanguage) }
+                review.template.document.questions.filter { it.pageId == templatePage.id }, review.project.project.questionnaireLanguage, profile, job.id,
+                hash(workspace.assets.readBytes(page.image.renderPath))) }
                 finally { templateImage.flush(); submittedImage.flush() }
             currentCoroutineContext().ensureActive()
             if (!repositories.intelligence.isRecognitionClaimValid(job, true)) return
@@ -692,7 +760,7 @@ class Controller(val workspace: SecureWorkspace, val modelDir: Path, startWorker
             is TemplateValidationException -> "TEMPLATE_INVALID: " + error.issues.joinToString { it.code.name }
             is SubmissionValidationException -> "SUBMISSION_INVALID: " + error.issues.joinToString { it.code.name }
             is ReviewValidationException -> "REVIEW_INCOMPLETE"
-            is StaleAnswerException, is StaleTemplateException, is StaleSubmissionException, is StaleOutputConfigurationException -> "STALE_EDIT_RELOAD"
+            is StaleAnswerException, is StaleTemplateException, is StaleSubmissionException, is StaleOutputConfigurationException, is StaleRecognitionException -> "STALE_EDIT_RELOAD"
             else -> error.message?.takeIf { it.matches(Regex("[A-Z0-9_: ,.-]{1,160}")) } ?: error.javaClass.simpleName
         }
     }

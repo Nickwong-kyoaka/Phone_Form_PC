@@ -60,9 +60,18 @@ val BrandBlue = Color(0xff2563eb)
 }
 
 /** Callbacks are scoped to mounted workspaces; disposed editors cannot receive shortcuts or drops. */
+internal class ScopedSaveActions {
+    private val entries=linkedMapOf<Any,()->Unit>()
+    val owner:Any? get()=entries.keys.lastOrNull()
+    val action:(()->Unit)? get()=entries.values.lastOrNull()
+    fun register(owner:Any,action:()->Unit) { entries[owner]=action }
+    fun unregister(owner:Any) { entries.remove(owner) }
+}
+
 class DesktopActions {
-    var saveOwner: Any? = null
-    var save: (() -> Unit)? = null
+    internal val saves=ScopedSaveActions()
+    val saveOwner: Any? get()=saves.owner
+    val save: (() -> Unit)? get()=saves.action
     var searchOwner: Any? = null
     var search: (() -> Unit)? = null
     var dropOwner: Any? = null
@@ -78,8 +87,8 @@ val LocalEditorEnabled = staticCompositionLocalOf { true }
     val current by rememberUpdatedState(action)
     val owner=remember { Any() }
     DisposableEffect(registry,enabled) {
-        if(enabled) {registry.saveOwner=owner;registry.save={current()}}
-        onDispose {if(registry.saveOwner===owner){registry.saveOwner=null;registry.save=null}}
+        if(enabled) registry.saves.register(owner){current()}
+        onDispose {registry.saves.unregister(owner)}
     }
 }
 @Composable fun RegisterSearchAction(request:()->Unit) {

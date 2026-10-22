@@ -1,0 +1,29 @@
+{
+  "appVersion": "0.3.0-dev",
+  "date": "2026-10-22T15:34:38.5973817+08:00",
+  "workspace": "Disposable anonymous workspace separate from the default user data location",
+  "interfaceLanguage": "zh-Hant",
+  "theme": "light",
+  "observedWindowPixels": {
+    "width": 1269,
+    "height": 811
+  },
+  "checks": [
+    "Self-contained EXE opened the generated encrypted workspace",
+    "Project list displayed 1 submitted and 1 confirmed record",
+    "Enter opened the selected project",
+    "Template page and three questions loaded",
+    "Recognition settings group canvas, per-option codes and fixed confirmation bar displayed",
+    "Toggling recognition queued encrypted edit saving; scoped preview action started"
+  ],
+  "scope": "Targeted startup/layout smoke only; no complete manual workflow or Windows DPI acceptance",
+  "notVerified": [
+    "Preview result display during this manual smoke",
+    "Full three-language manual journey",
+    "Dark/light and 100/150/200 percent DPI matrix",
+    "Narrow-window pointer journey",
+    "Clean-machine installation or MSI upgrade"
+  ],
+  "screenshotsPersisted": 0,
+  "nativeExcel": "Not repeated, following user instruction; answer and independent OOXML checks are authoritative for this round"
+}

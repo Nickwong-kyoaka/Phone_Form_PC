@@ -23,19 +23,33 @@ fun OcrLine.toPageCoordinates(crop: NormalizedRect): OcrLine {
 }
 
 /** Image-only contract: PDF source paths never reach Tesseract. */
+enum class OcrPurpose { PAGE_LAYOUT, QUESTION_TEXT, NUMBER, DATE, PRINTED_DIGIT }
 fun interface OcrEngine {
     fun read(image: BufferedImage, language: QuestionnaireLanguage): List<OcrLine>
+    fun read(image: BufferedImage, language: QuestionnaireLanguage, purpose: OcrPurpose): List<OcrLine> = read(image, language)
 }
 
 class Tess4jOcrEngine(private val modelDir: Path) : OcrEngine {
-    override fun read(image: BufferedImage, language: QuestionnaireLanguage): List<OcrLine> {
+    override fun read(image: BufferedImage, language: QuestionnaireLanguage): List<OcrLine> = read(image,language,OcrPurpose.PAGE_LAYOUT)
+    override fun read(image: BufferedImage, language: QuestionnaireLanguage, purpose: OcrPurpose): List<OcrLine> {
         val models = modelNames(language)
         require(models.all { Files.isRegularFile(modelDir.resolve("$it.traineddata")) }) { "OCR_MODELS_MISSING" }
         val engine = Tesseract().apply {
             setDatapath(modelDir.toAbsolutePath().toString())
             setLanguage(models.joinToString("+"))
-            setPageSegMode(ITessAPI.TessPageSegMode.PSM_AUTO)
+            setPageSegMode(when(purpose) {
+                OcrPurpose.PAGE_LAYOUT -> ITessAPI.TessPageSegMode.PSM_AUTO
+                OcrPurpose.QUESTION_TEXT -> ITessAPI.TessPageSegMode.PSM_SINGLE_BLOCK
+                OcrPurpose.NUMBER, OcrPurpose.DATE -> ITessAPI.TessPageSegMode.PSM_SINGLE_LINE
+                OcrPurpose.PRINTED_DIGIT -> ITessAPI.TessPageSegMode.PSM_SPARSE_TEXT
+            })
             setOcrEngineMode(ITessAPI.TessOcrEngineMode.OEM_LSTM_ONLY)
+            when(purpose) {
+                OcrPurpose.NUMBER -> setVariable("tessedit_char_whitelist","0123456789+-./–—− ")
+                OcrPurpose.DATE -> setVariable("tessedit_char_whitelist","0123456789-/年月日 ")
+                OcrPurpose.PRINTED_DIGIT -> setVariable("tessedit_char_whitelist","0123456789")
+                else -> Unit
+            }
             setVariable("debug_file", if (System.getProperty("os.name").startsWith("Windows")) "NUL" else "/dev/null")
         }
         fun rect(box: java.awt.Rectangle) = NormalizedRect(

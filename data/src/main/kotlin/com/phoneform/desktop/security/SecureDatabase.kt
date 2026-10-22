@@ -48,6 +48,8 @@ class SecureDatabase private constructor(private val connection: Connection) : C
                     }
                     // Force key authentication before schema migration; never retry as plaintext.
                     statement.executeQuery("SELECT count(*) FROM sqlite_master").use { it.next() }
+                    val existingVersion = statement.executeQuery("PRAGMA user_version").use { it.next(); it.getInt(1) }
+                    if (existingVersion > 2) throw IOException("Workspace was created by a newer version of PhoneForm")
                     statement.execute("PRAGMA temp_store=MEMORY")
                     statement.execute("PRAGMA secure_delete=ON")
                     statement.execute("PRAGMA foreign_keys=ON")
@@ -58,11 +60,18 @@ class SecureDatabase private constructor(private val connection: Connection) : C
                 return SecureDatabase(connection).apply { transaction { db ->
                     db.createStatement().use { statement ->
                         val version = statement.executeQuery("PRAGMA user_version").use { it.next(); it.getInt(1) }
-                        if (version > 1) throw IOException("Workspace was created by a newer version of PhoneForm")
-                        statement.execute("CREATE TABLE IF NOT EXISTS pc_records(kind TEXT NOT NULL,id TEXT NOT NULL,project_id TEXT,payload TEXT NOT NULL,PRIMARY KEY(kind,id))")
-                        statement.execute("CREATE INDEX IF NOT EXISTS pc_records_project ON pc_records(project_id,kind)")
-                        statement.execute("CREATE TABLE IF NOT EXISTS pc_meta(key TEXT PRIMARY KEY NOT NULL,value TEXT NOT NULL)")
-                        statement.execute("PRAGMA user_version=1")
+                        if (version > 2) throw IOException("Workspace was created by a newer version of PhoneForm")
+                        if (version == 0) {
+                            val tables = statement.executeQuery("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'").use { rows -> buildList { while (rows.next()) add(rows.getString(1)) } }
+                            if (tables.isNotEmpty()) throw IOException("SCHEMA_VERSION_MISSING")
+                            statement.execute("CREATE TABLE pc_records(kind TEXT NOT NULL,id TEXT NOT NULL,project_id TEXT,payload TEXT NOT NULL,PRIMARY KEY(kind,id))")
+                            statement.execute("CREATE INDEX pc_records_project ON pc_records(project_id,kind)")
+                            statement.execute("CREATE TABLE pc_meta(key TEXT PRIMARY KEY NOT NULL,value TEXT NOT NULL)")
+                        } else if (version == 1) SchemaV2.migrate(db)
+                        // Check both existing tables before accepting an already-versioned database.
+                        statement.executeQuery("SELECT kind,id,project_id,payload FROM pc_records LIMIT 0").close()
+                        statement.executeQuery("SELECT key,value FROM pc_meta LIMIT 0").close()
+                        if (version < 2) statement.execute("PRAGMA user_version=2")
                     }
                 } }
             } catch (failure: Throwable) { connection.close(); throw failure }

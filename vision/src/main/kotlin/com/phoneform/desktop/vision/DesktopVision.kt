@@ -34,7 +34,7 @@ class DesktopVision(private val modelDir: Path, private val reader: OcrEngine = 
         require(requested.isValid()) { "INVALID_ANALYSIS_SCOPE" }
         checkCancelled()
         val crop = crop(image, requested)
-        val lines = reader.read(crop.image, language).map { it.toPageCoordinates(crop.region) }
+        val lines = reader.read(crop.image, language, if(scope==null)OcrPurpose.PAGE_LAYOUT else OcrPurpose.QUESTION_TEXT).map { it.toPageCoordinates(crop.region) }
         checkCancelled()
         val layout = runCatching { OpenCvGeometry.layout(image, lines) }
             .getOrElse { PrintedLayoutGeometry(emptyList(), emptyList()) }
@@ -42,14 +42,64 @@ class DesktopVision(private val modelDir: Path, private val reader: OcrEngine = 
             crop.region, layout.independentAnswerBoxes).map { it.question }
     }
 
+    fun suggestPrintedCores(image: BufferedImage, options: List<OptionMarkRegion>, language: QuestionnaireLanguage): List<OptionMarkRegion> = options.map { option ->
+        checkCancelled()
+        if(!option.region.isValid()) option else {
+            val local=crop(image,option.region)
+            val words=try { reader.read(local.image,language,OcrPurpose.PRINTED_DIGIT).flatMap { line ->
+                line.elements.ifEmpty { listOf(OcrElement(line.text,line.region)) }
+            }.filter { it.text.trim().matches(Regex("[0-9]{1,3}")) && it.region.isValid() } }
+                catch(cancelled:java.util.concurrent.CancellationException){throw cancelled}
+                catch(_:Exception){emptyList()}
+            val found=words.minByOrNull { abs((it.region.left+it.region.right)/2-.5f)+abs((it.region.top+it.region.bottom)/2-.5f) }
+            if(found==null) option else {
+                val r=found.region;val dx=max(.025f,(r.right-r.left)*.12f);val dy=max(.025f,(r.bottom-r.top)*.12f)
+                val padded=NormalizedRect(max(0f,r.left-dx),max(0f,r.top-dy),min(1f,r.right+dx),min(1f,r.bottom+dy))
+                val pageCore=OcrLine("",padded).toPageCoordinates(local.region).region
+                option.copy(printedCore=pageCore,coreConfirmed=false)
+            }
+        }
+    }
+
     fun recognize(templatePage: SamplePage, templateImage: BufferedImage, submittedPage: SamplePage,
-        image: BufferedImage, questions: List<QuestionDefinition>, language: QuestionnaireLanguage): RecognitionResult {
+        image: BufferedImage, questions: List<QuestionDefinition>, language: QuestionnaireLanguage,
+        profile: TemplateRecognitionProfile? = null, jobId: String? = null, sourceSha256: String? = null): RecognitionResult {
         require(questions.all { it.pageId == templatePage.id }) { "QUESTION_PAGE_MISMATCH" }
         require(templateImage.width == templatePage.width && templateImage.height == templatePage.height &&
             image.width == submittedPage.width && image.height == submittedPage.height) { "PAGE_DIMENSIONS_CHANGED" }
         checkCancelled()
-        val geometry = if (templatePage.noExtraction || questions.isEmpty()) GeometryResult(emptyList(), null, "NO_REQUESTED_REGIONS")
-            else try { OpenCvGeometry.align(templateImage, image, questions) }
+        val inputSha=sourceSha256 ?: imageHash(image)
+        fun base(q:QuestionDefinition,reason:String="")=FieldObservation("question:${q.id}",templatePage.id,submittedPage.id,submittedPage.revision,
+            reason=reason,engineVersion=VERSION,processingFingerprint=PageProcessingFingerprint.of(submittedPage),
+            profileId=profile?.id,sourceSha256=inputSha)
+        if(templatePage.noExtraction || questions.isEmpty()) return RecognitionResult(PageAlignment(templatePage.id,submittedPage.id,submittedPage.revision,
+            AlignmentStatus.NOT_REQUIRED,reason=if(templatePage.noExtraction)"NO_EXTRACTION" else "NO_REQUESTED_REGIONS",engineVersion=VERSION),emptyList())
+        val profileError=when {
+            profile==null -> "RECOGNITION_PROFILE_REQUIRED"
+            profile.engineVersion!=VERSION || profile.parametersVersion!=MarkParameters.VERSION -> "RECOGNITION_PROFILE_ENGINE_MISMATCH"
+            profile.pageFingerprints[templatePage.id]!=PageProcessingFingerprint.of(templatePage) -> "RECOGNITION_PROFILE_PAGE_MISMATCH"
+            profile.settings.map { it.questionId }.distinct().size!=profile.settings.size -> "DUPLICATE_QUESTION_SETTINGS"
+            else -> null
+        }
+        if(profileError!=null) return RecognitionResult(PageAlignment(templatePage.id,submittedPage.id,submittedPage.revision,
+            AlignmentStatus.NOT_REQUIRED,reason=profileError,engineVersion=VERSION),questions.map { base(it,profileError) })
+        val settings=profile!!.settings.associateBy { it.questionId }
+        fun enabled(q:QuestionDefinition):Boolean {
+            val s=settings[q.id] ?: return false
+            return s.enabled && q.type!=QuestionType.TEXT &&
+                (q.type !in listOf(QuestionType.SINGLE_CHOICE,QuestionType.MULTIPLE_CHOICE) || s.style!=MarkStyle.MANUAL_ONLY)
+        }
+        val active=questions.filter(::enabled)
+        if(active.isEmpty())return RecognitionResult(PageAlignment(templatePage.id,submittedPage.id,submittedPage.revision,
+            AlignmentStatus.NOT_REQUIRED,reason="MANUAL_ONLY",engineVersion=VERSION),questions.map {
+            val observation=base(it,if(it.type==QuestionType.TEXT)"MANUAL_TEXT_REQUIRED" else "MANUAL_MARK_STYLE")
+            if(jobId!=null)RecognitionBindings.bind(observation,jobId,profile.id)
+            else observation.copy(evidenceHash=RecognitionBindings.evidenceHash(observation),provenance=RecognitionProvenance.VERSIONED)
+        })
+        val geometry = try { OpenCvGeometry.align(templateImage, image, active.map { q ->
+                val s=settings.getValue(q.id);q.copy(options=q.options.map { option -> option.copy(region=s.options.find { it.optionId==option.id }?.region) },
+                    answerRegion=s.answerRegion ?: q.answerRegion)
+            }) }
                 catch (_: LocalVisionUnavailableException) { GeometryResult(emptyList(), null, "LOCAL_CV_UNAVAILABLE") }
                 catch (_: LinkageError) { GeometryResult(emptyList(), null, "LOCAL_CV_UNAVAILABLE") }
         val alignment = PageAlignment(templatePage.id, submittedPage.id, submittedPage.revision,
@@ -62,15 +112,15 @@ class DesktopVision(private val modelDir: Path, private val reader: OcrEngine = 
         } else null
         val observations = try { questions.map { question ->
             checkCancelled()
-            val base = FieldObservation("question:${question.id}", templatePage.id, submittedPage.id, submittedPage.revision,
-                evidenceRegion = question.answerRegion ?: question.region, engineVersion = VERSION,
-                processingFingerprint = PageProcessingFingerprint.of(submittedPage))
-            if (!geometry.aligned) base.copy(reason = "ALIGNMENT_FAILED:${geometry.reason}", evidenceRegion = null)
+            val base = base(question).copy(evidenceRegion = question.answerRegion ?: question.region)
+            if (!enabled(question)) base.copy(reason=if(question.type==QuestionType.TEXT)"MANUAL_TEXT_REQUIRED" else "MANUAL_MARK_STYLE",evidenceRegion=null)
+            else if (!geometry.aligned) base.copy(reason = "ALIGNMENT_FAILED:${geometry.reason}", evidenceRegion = null)
             else when (question.type) {
-                QuestionType.SINGLE_CHOICE, QuestionType.MULTIPLE_CHOICE -> choice(geometry.warped!!, question, base)
+                QuestionType.SINGLE_CHOICE, QuestionType.MULTIPLE_CHOICE -> choice(geometry.warped!!, question, settings.getValue(question.id), base)
                 QuestionType.NUMBER, QuestionType.DATE -> try {
-                    val original = scalar(geometry.warped!!, question, base, language)
-                    val alternative = enhancedAligned?.let { scalar(it, question, base, language) }
+                    val configured=question.copy(answerRegion=settings.getValue(question.id).answerRegion ?: question.answerRegion)
+                    val original = scalar(geometry.warped!!, configured, base, language)
+                    val alternative = enhancedAligned?.let { scalar(it, configured, base, language) }
                     reconcileScalar(original, alternative,
                         processing?.quality?.issues?.any { it.severity != PageQualitySeverity.INFO } == true,
                         submittedPage.processing.mode == PageProcessingMode.AUTO_LIGHT && alternative == null,
@@ -82,28 +132,39 @@ class DesktopVision(private val modelDir: Path, private val reader: OcrEngine = 
                 QuestionType.TEXT -> base.copy(reason = "MANUAL_TEXT_REQUIRED")
             }
         } } finally { enhancedAligned?.flush(); geometry.warped?.flush() }
-        return RecognitionResult(alignment, observations.map { observation -> observation.copy(evidenceRegion =
-            observation.evidenceRegion?.let { evidenceInSubmittedImage(it, geometry.templateToImage) }) })
+        return RecognitionResult(alignment, observations.map { observation ->
+            val projected=observation.copy(requiresReview=true,evidenceRegion=observation.evidenceRegion?.let { evidenceInSubmittedImage(it,geometry.templateToImage) },
+                optionObservations=observation.optionObservations.map { option -> option.copy(submittedRegion=evidenceInSubmittedImage(option.region,geometry.templateToImage)) })
+            if(jobId!=null)RecognitionBindings.bind(projected,jobId,profile.id)
+            else projected.copy(evidenceHash=RecognitionBindings.evidenceHash(projected),provenance=RecognitionProvenance.VERSIONED)
+        })
     }
 
-    private fun choice(image: BufferedImage, question: QuestionDefinition, base: FieldObservation): FieldObservation {
-        val marks = question.options.map { option -> option.region?.let { OpenCvGeometry.marked(image, it) } }
-        if (marks.isEmpty() || marks.any { it == null }) return base.copy(reason = "AMBIGUOUS_MARKS")
-        val selected = question.options.filterIndexed { index, _ -> marks[index] == true }.map { it.id }
-        if (selected.isEmpty()) return base.copy(candidate = AnswerValue(base.targetKey, AnswerState.BLANK,
-            source = AnswerSource.MACHINE_ACCEPTED), reason = "BLANK_REQUIRES_CONFIRMATION")
-        if (question.type == QuestionType.SINGLE_CHOICE && selected.size != 1) return base.copy(reason = "MULTIPLE_SINGLE_CHOICE_MARKS")
-        return base.copy(candidate = AnswerValue(base.targetKey, AnswerState.VALUE, optionIds = selected,
-            source = AnswerSource.MACHINE_ACCEPTED), requiresReview = true,
-            reason = if (question.matrixId == null) "MARKS_REQUIRE_CONFIRMATION" else "MATRIX_MARKS_REQUIRE_CONFIRMATION")
+    private fun choice(image: BufferedImage, question: QuestionDefinition, settings:QuestionRecognitionSettings, base: FieldObservation): FieldObservation {
+        if(settings.options.map { it.optionId }.toSet()!=question.options.map { it.id }.toSet() || settings.options.map { it.optionId }.distinct().size!=settings.options.size)
+            return base.copy(reason="OPTION_SETTINGS_REQUIRED")
+        val overlap=settings.options.indices.any { i -> settings.options.indices.any { j ->
+            j>i && RecognitionBindings.optionRegionsOverlap(settings.options[i].region,settings.options[j].region)
+        } }
+        if(overlap)return base.copy(reason="OVERLAPPING_OPTION_REGIONS",optionObservations=settings.options.map {
+            OptionObservation(it.optionId,OptionDecision.UNSUPPORTED,it.region,it.printedCore,"OVERLAPPING_OPTION_REGIONS") })
+        val decisions=question.options.map { option ->
+            try { MarkDetectors.inspect(image,settings.style,settings.options.single { it.optionId==option.id }) }
+            catch(cancelled:java.util.concurrent.CancellationException){throw cancelled}
+            catch(_:Exception){OptionObservation(option.id,OptionDecision.UNSUPPORTED,settings.options.single { it.optionId==option.id }.region,reason="LOCAL_MARK_DETECTOR_UNAVAILABLE")}
+        }
+        val evidence=decisions.map { it.region }.takeIf { it.isNotEmpty() }?.let { regions -> NormalizedRect(regions.minOf { it.left },regions.minOf { it.top },regions.maxOf { it.right },regions.maxOf { it.bottom }) }
+        val observed=base.copy(optionObservations=decisions,evidenceRegion=evidence)
+        if(!MarkAcceptanceGate.enabled(settings.style))return observed.copy(reason="STYLE_ACCEPTANCE_GATE_CLOSED")
+        return aggregateChoices(question,decisions,observed)
     }
 
     private fun scalar(image: BufferedImage, question: QuestionDefinition, base: FieldObservation,
         language: QuestionnaireLanguage): FieldObservation {
         val region = question.answerRegion?.takeIf { it.isValid() } ?: return base.copy(reason = "ANSWER_REGION_MISSING")
-        val raw = reader.read(crop(image, region).image, language).joinToString("\n") { it.text }.trim()
+        val raw = reader.read(crop(image, region).image, language,if(question.type==QuestionType.NUMBER)OcrPurpose.NUMBER else OcrPurpose.DATE).joinToString("\n") { it.text }.trim()
         val value = when (question.type) {
-            QuestionType.NUMBER -> raw.takeIf { it.matches(Regex("[+-]?(?:[0-9]+(?:\\.[0-9]+)?|\\.[0-9]+)")) && it.toBigDecimalOrNull() != null }
+            QuestionType.NUMBER -> parseNumber(raw)
             QuestionType.DATE -> parseDate(raw)
             else -> null
         }
@@ -112,10 +173,10 @@ class DesktopVision(private val modelDir: Path, private val reader: OcrEngine = 
                 source = AnswerSource.MACHINE_ACCEPTED), requiresReview = true, reason = "OCR_REQUIRES_CONFIRMATION")
     }
 
-    fun process(image: BufferedImage, config: PageProcessingConfig): ProcessedImage = processImage(image, config, imageHash(image))
+    fun process(image: BufferedImage, config: PageProcessingSpec): ProcessedImage = processImage(image, config, imageHash(image))
     fun process(page: SamplePage, image: BufferedImage): ProcessedImage = processImage(image, page.processing, PageProcessingFingerprint.of(page))
 
-    private fun processImage(image: BufferedImage, config: PageProcessingConfig, fingerprint: String): ProcessedImage {
+    private fun processImage(image: BufferedImage, config: PageProcessingSpec, fingerprint: String): ProcessedImage {
         checkCancelled()
         var report = try { DesktopImageProcessor.assess(image, fingerprint) }
             catch (_: LinkageError) { unavailableQuality(fingerprint) }
@@ -218,7 +279,20 @@ class DesktopVision(private val modelDir: Path, private val reader: OcrEngine = 
         assessment = PageQualityAssessment.UNKNOWN)
 
     companion object {
-        const val VERSION = "tesseract-5.5_opencv-4.12.0_layout-4"
+        const val VERSION = RecognitionContracts.ENGINE_VERSION
+        /** Internal evaluation seam; production invokes this only after profile validation and the style gate. */
+        internal fun aggregateChoices(question:QuestionDefinition, decisions:List<OptionObservation>, base:FieldObservation):FieldObservation {
+            val observed=base.copy(optionObservations=decisions,requiresReview=true)
+            if(decisions.isEmpty() || decisions.map { it.optionId }.toSet()!=question.options.map { it.id }.toSet() || decisions.map { it.optionId }.distinct().size!=decisions.size)
+                return observed.copy(candidate=null,reason="OPTION_SETTINGS_REQUIRED")
+            if(decisions.any { it.decision==OptionDecision.AMBIGUOUS || it.decision==OptionDecision.UNSUPPORTED })return observed.copy(candidate=null,reason="OPTION_REQUIRES_MANUAL_REVIEW")
+            val selected=decisions.filter { it.decision==OptionDecision.SELECTED }.map { it.optionId }
+            if(selected.isEmpty())return observed.copy(candidate=AnswerValue(base.targetKey,AnswerState.BLANK,source=AnswerSource.MACHINE_ACCEPTED),reason="BLANK_REQUIRES_CONFIRMATION")
+            if(question.type==QuestionType.SINGLE_CHOICE && selected.size!=1)return observed.copy(candidate=null,reason="MULTIPLE_SINGLE_CHOICE_MARKS")
+            return observed.copy(candidate=AnswerValue(base.targetKey,AnswerState.VALUE,optionIds=selected,source=AnswerSource.MACHINE_ACCEPTED),
+                reason=if(question.matrixId==null)"MARKS_REQUIRE_CONFIRMATION" else "MATRIX_MARKS_REQUIRE_CONFIRMATION")
+        }
+        fun parseNumber(raw:String):String? = raw.trim().takeIf { it.length<=120 && it.matches(Regex("[+-]?(?:[0-9]+(?:\\.[0-9]+)?|\\.[0-9]+)")) && it.toBigDecimalOrNull()!=null }
         /** Review displays the submitted page, so evidence must use its normalized coordinates. */
         internal fun evidenceInSubmittedImage(region: NormalizedRect, matrix: List<Double>): NormalizedRect? {
             if (!region.isValid() || matrix.size != 9 || matrix.any { !it.isFinite() }) return null

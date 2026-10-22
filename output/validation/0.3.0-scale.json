@@ -1,0 +1,47 @@
+{
+  "date": "2026-10-22T15:36:18.746793700+08:00",
+  "records": 1000,
+  "pagesPerRecord": 2,
+  "targetsPerRecord": 9,
+  "headerLanguages": 3,
+  "collectionMillis": 497790,
+  "exportMillis": 3948,
+  "totalMillis": 510658,
+  "peakHeapPoolBytes": 277730480,
+  "encryptedDatabaseBytes": 51699712,
+  "listSearch": {
+    "scope": "full repository reads plus client-side filtering; no UI latency or thumbnail measurement",
+    "repositoryPagingSupported": false,
+    "repositorySearchSupported": false,
+    "submissionListReadNanos": 30020100,
+    "reviewSummaryReadNanos": 2188657000,
+    "searchSamples": 25,
+    "clientSearchMeanNanos": 837895,
+    "clientSearchP95Nanos": 1290200,
+    "clientStatusFilterNanos": 394100,
+    "allRows": 1000,
+    "confirmedRows": 1000,
+    "pendingRows": 0,
+    "exceptionRows": 0
+  },
+  "restart": {
+    "workspaceReopenMillis": 192,
+    "verificationMillis": 3749,
+    "listRecordsVerified": 1000,
+    "answerRecordsVerified": 3,
+    "answerValuesVerified": 27,
+    "exportsVerified": 3
+  },
+  "xlsxBytes": {
+    "SIMPLIFIED": 188998,
+    "TRADITIONAL": 188992,
+    "ENGLISH": 188768
+  },
+  "appVersion": "0.3.0-dev",
+  "imagesReused": true,
+  "uniqueSourceImages": 2,
+  "machineRecognitionThroughputMeasured": false,
+  "scope": "Generated anonymous human-review repository workload; shared images, not independent scans, not UI latency or OCR throughput",
+  "validationCommand": ".\\scripts\\Invoke-Build.ps1 -Tasks ':desktop:cleanTest',':desktop:test','--tests','com.phoneform.desktop.DesktopWorkflowTest','-Pkotlin.compiler.execution.strategy=in-process' with PHONEFORM_SCALE_COUNT=1000",
+  "result": "PASS"
+}

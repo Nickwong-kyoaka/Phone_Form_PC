@@ -14,9 +14,12 @@ data class TemplateAnalysisRun(val id: String, val projectId: String, val draftI
     val createdAtEpochMillis: Long = System.currentTimeMillis(),
     val scope: TemplateAnalysisScope? = null, val processingFingerprints: Map<String, String> = emptyMap())
 data class TemplateRecognitionProfile(val templateVersionId: String, val engineVersion: String,
-    val pageFingerprints: Map<String, String>, val createdAtEpochMillis: Long = System.currentTimeMillis())
+    val pageFingerprints: Map<String, String>, val createdAtEpochMillis: Long = System.currentTimeMillis(),
+    val id: String = java.util.UUID.randomUUID().toString(), val projectId: String = "", val version: Int = 1,
+    val settings: List<QuestionRecognitionSettings> = emptyList(),
+    val parametersVersion: String = RecognitionContracts.PARAMETERS_VERSION, val sourceDraftId: String? = null)
 
-enum class AlignmentStatus { ALIGNED, FAILED, MANUAL }
+enum class AlignmentStatus { ALIGNED, FAILED, MANUAL, NOT_REQUIRED }
 data class PageAlignment(val templatePageId: String, val imageId: String, val imageRevision: Int,
     val status: AlignmentStatus, val templateToImage: List<Double> = emptyList(),
     val reason: String = "", val engineVersion: String = "")
@@ -25,18 +28,23 @@ enum class AnswerSource { MANUAL, MACHINE_ACCEPTED, INHERITED }
 /** Keys are question:<stable question id> or field:<stable manual field id>. */
 data class AnswerValue(val targetKey: String, val state: AnswerState = AnswerState.UNHANDLED,
     val text: String = "", val optionIds: List<String> = emptyList(), val source: AnswerSource = AnswerSource.MANUAL,
-    val humanEdited: Boolean = false)
+    val humanEdited: Boolean = false, val candidateRef: CandidateRef? = null)
 data class FieldObservation(val targetKey: String, val templatePageId: String, val imageId: String,
     val imageRevision: Int, val candidate: AnswerValue? = null, val rawText: String = "",
     val requiresReview: Boolean = true, val reason: String = "", val evidenceRegion: NormalizedRect? = null,
-    val engineVersion: String = "", val processingFingerprint: String = "", val enhancedRawText: String = "")
-enum class RecognitionJobStatus { QUEUED, RUNNING, PAUSED, FAILED, READY, SUPERSEDED }
+    val engineVersion: String = "", val processingFingerprint: String = "", val enhancedRawText: String = "",
+    val optionObservations: List<OptionObservation> = emptyList(), val profileId: String? = null,
+    val sourceSha256: String = "", val evidenceHash: String = "",
+    val provenance: RecognitionProvenance = RecognitionProvenance.LEGACY_UNBOUND)
+enum class RecognitionJobStatus { QUEUED, RUNNING, PAUSED, FAILED, READY, SUPERSEDED, BLOCKED }
 data class RecognitionJob(val id: String, val projectId: String, val submissionId: String,
     val submissionRevisionId: String, val status: RecognitionJobStatus = RecognitionJobStatus.QUEUED,
     val completedPageIds: List<String> = emptyList(), val observations: List<FieldObservation> = emptyList(),
     val alignments: List<PageAlignment> = emptyList(), val attempt: Int = 0,
     val processSessionId: String? = null, val runToken: String? = null, val error: String? = null,
-    val createdAtEpochMillis: Long = System.currentTimeMillis())
+    val createdAtEpochMillis: Long = System.currentTimeMillis(),
+    val profileId: String? = null, val engineVersion: String = "", val inputFingerprint: String = "",
+    val provenance: RecognitionProvenance = RecognitionProvenance.LEGACY_UNBOUND)
 data class AnswerSetRevision(val id: String, val projectId: String, val submissionId: String,
     val submissionRevisionId: String, val version: Int, val operationId: String,
     val answers: List<AnswerValue>, val createdAtEpochMillis: Long = System.currentTimeMillis(),
@@ -58,7 +66,7 @@ enum class ExportCellType { TEXT, NUMBER }
 data class ExportCell(val value: String = "", val type: ExportCellType = ExportCellType.TEXT)
 data class ExportSheet(val name: String, val headers: List<String>, val rows: List<List<ExportCell>>)
 data class ExportRecordReference(val submissionId: String, val submissionRevisionId: String,
-    val answerRevisionId: String?, val confirmationId: String?)
+    val answerRevisionId: String?, val confirmationId: String?, val candidateRefs: List<CandidateRef> = emptyList())
 data class ExportSnapshot(val id: String, val projectId: String, val projectName: String,
     val outputVersion: Int, val includeUnresolved: Boolean, val createdAtEpochMillis: Long,
     val records: List<ExportRecordReference>, val excludedReasons: Map<String, String>, val sheets: List<ExportSheet>)
@@ -73,6 +81,14 @@ interface IntelligenceRepository {
     suspend fun decideSuggestion(draftId: String, suggestionId: String, accept: Boolean): TemplateDraft
     suspend fun saveRecognitionProfile(profile: TemplateRecognitionProfile)
     suspend fun getRecognitionProfile(templateVersionId: String): TemplateRecognitionProfile?
+    suspend fun getRecognitionProfileById(profileId: String): TemplateRecognitionProfile? = null
+    suspend fun beginRecognitionProfileDraft(templateVersionId: String): RecognitionProfileDraft = throw UnsupportedOperationException()
+    suspend fun saveRecognitionProfileDraft(draft: RecognitionProfileDraft): RecognitionProfileDraft = throw UnsupportedOperationException()
+    suspend fun confirmRecognitionProfileDraft(draftId: String, expectedRevision: Int, expectedHeadId: String?,
+        operationId: String): TemplateRecognitionProfile = throw UnsupportedOperationException()
+    suspend fun discardRecognitionProfileDraft(draftId: String, expectedRevision: Int) { throw UnsupportedOperationException() }
+    suspend fun rerunRecognition(submissionId: String, expectedRevisionId: String, profileId: String,
+        expectedHeadId: String?, operationId: String): RecognitionJob = throw UnsupportedOperationException()
     fun observeRecognitionJobs(projectId: String): Flow<List<RecognitionJob>>
     suspend fun initializeRecognition(processSessionId: String)
     suspend fun claimRecognition(processSessionId: String, appInForeground: Boolean): RecognitionJob?

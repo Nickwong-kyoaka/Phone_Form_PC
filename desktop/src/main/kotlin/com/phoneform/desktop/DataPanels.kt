@@ -185,6 +185,17 @@ import java.time.format.DateTimeFormatter
         }
     }
     val activeId = ui.reviewSubmissionId
+    var recognitionSettings by remember(projectId){mutableStateOf(false)}
+    var rerunIds by remember(projectId){mutableStateOf<List<String>?>(null)}
+    var rerunMessage by remember(projectId){mutableStateOf<String?>(null)}
+    if(recognitionSettings && state.template!=null)RecognitionSettingsDialog(controller,state.template,language,{recognitionSettings=false})
+    rerunIds?.let { ids->AlertDialog(onDismissRequest={rerunIds=null},title={Text(tr(language,"重新辨識未確認問卷","重新识别未确认问卷","Rerun unconfirmed questionnaires"))},
+        text={Text(tr(language,"將檢查 ${ids.size} 份目前未確認問卷，使用已確認的辨識設定。已確認、修訂已變更或不適用的項目會略過；人工答案仍保留。","将检查 ${ids.size} 份当前未确认问卷，使用已确认的识别设置。已确认、修订已变更或不适用项目会跳过；人工答案仍保留。","Check ${ids.size} currently unconfirmed questionnaires using confirmed settings. Confirmed, changed or ineligible records are skipped. Human answers are retained."))},
+        confirmButton={Button(onClick={rerunIds=null;controller.perform {
+            var queued=0;var skipped=0;var reason:String?=null
+            for(id in ids)try{rerunRecognition(id);queued++}catch(e:kotlinx.coroutines.CancellationException){throw e}catch(e:Exception){skipped++;reason=reason ?: Controller.errorCode(e)}
+            rerunMessage=tr(language,"已排隊 $queued 份，略過 $skipped 份。任務詳情可在任務面板查看。","已排队 $queued 份，跳过 $skipped 份。任务详情可在任务面板查看。","Queued $queued; skipped $skipped. Check the task panel for details.")+(reason?.let {" "+message(language,it)} ?: "")
+        }}){Text(tr(language,"開始重新辨識","开始重新识别","Start rerun"))}},dismissButton={TextButton(onClick={rerunIds=null}){Text(tr(language,"取消","取消","Cancel"))}}) }
     var workspace by remember(projectId) { mutableStateOf<ReviewWorkspace?>(null) }
     var loadError by remember(projectId) { mutableStateOf(false) }
     var loading by remember(projectId) { mutableStateOf(false) }
@@ -204,7 +215,10 @@ import java.time.format.DateTimeFormatter
         Column(Modifier.fillMaxSize()) {
             WorkspaceToolbar(tr(language,"人工覆核","人工复核","Review questionnaires"), tr(language,"選擇一份問卷，逐題核對證據與答案。","选择一份问卷，逐题核对证据和答案。","Open a questionnaire to check its evidence and answers.")) {
                 Text("${state.reviews.count { !it.confirmed }} " + tr(language,"份待覆核","份待复核","pending"), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                OutlinedButton(onClick={recognitionSettings=true},enabled=state.template!=null && !state.busy){Text(tr(language,"辨識設定","识别设置","Recognition settings"))}
+                OutlinedButton(onClick={rerunIds=orderedSummaries.filterNot {it.confirmed}.map {it.submissionId}},enabled=!state.busy && orderedSummaries.any {!it.confirmed}){Text(tr(language,"重跑未確認","重跑未确认","Rerun unconfirmed"))}
             }
+            rerunMessage?.let {Text(it,Modifier.padding(horizontal=20.dp,vertical=8.dp),style=MaterialTheme.typography.bodySmall)}
             Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 12.dp), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
                 OutlinedTextField(ui.reviewSearch, { text -> controller.updateProjectUi(projectId) { it.copy(reviewSearch = text) } },
                     placeholder = { Text(tr(language,"搜尋問卷編號或紙面編號","搜索问卷编号或纸面编号","Search number or paper ID")) }, singleLine = true, modifier = Modifier.weight(1f).focusRequester(searchFocus))
@@ -300,6 +314,8 @@ import java.time.format.DateTimeFormatter
                     DropdownMenu(more, { more = false }) {
                         DropdownMenuItem(text = { Text(tr(language,"補頁／替換修訂","补页／替换修订","Create page revision")) }, onClick = { more = false; controller.perform { val draft = repositories.submissions.beginRevision(review.submission.id); controller.updateProjectUi(projectId) { it.copy(collectionDraftId = draft.id) }; navigate(WorkspaceSection.COLLECTION) } }, enabled = !state.busy && !guardNavigation)
                         DropdownMenuItem(text = { Text(tr(language,"重試辨識","重试识别","Retry recognition")) }, onClick = { more = false; controller.perform { review.job?.let { repositories.intelligence.retryRecognition(it.id) } } }, enabled = !state.busy && review.job?.status in listOf(RecognitionJobStatus.FAILED, RecognitionJobStatus.PAUSED))
+                        DropdownMenuItem(text={Text(tr(language,"辨識設定","识别设置","Recognition settings"))},onClick={more=false;recognitionSettings=true},enabled=!state.busy && !guardNavigation)
+                        DropdownMenuItem(text={Text(tr(language,"以已確認設定重跑本份","以已确认设置重跑本份","Rerun with confirmed settings"))},onClick={more=false;rerunIds=listOf(review.submission.id)},enabled=!state.busy && !guardNavigation && review.confirmation==null && imagesReady)
                     }
                 }
                 Button(onClick = {
@@ -352,7 +368,11 @@ import java.time.format.DateTimeFormatter
             }, canvas = {
                 val image = review.revision.pages.firstOrNull { it.templatePageId == target?.question?.pageId }?.image
                 val observation = review.job?.observations?.firstOrNull { it.targetKey == target?.key }
-                if (image != null) PageCanvas(controller, image, listOfNotNull(observation?.evidenceRegion), null, {}, language, Modifier.fillMaxSize(), editable = false)
+                val selectedEvidence=observation?.optionObservations?.firstOrNull {it.optionId==ui.recognitionOptionId}
+                val alignment=review.job?.alignments?.firstOrNull {it.templatePageId==target?.question?.pageId && it.imageId==image?.id && it.imageRevision==image?.revision && it.status==AlignmentStatus.ALIGNED}
+                val core=selectedEvidence?.printedCore?.let {r->alignment?.let {projectEvidenceRect(r,it.templateToImage)}}
+                val evidenceBoxes=listOfNotNull(observation?.evidenceRegion)+observation?.optionObservations.orEmpty().mapNotNull {it.submittedRegion}
+                if (image != null) PageCanvas(controller, image, evidenceBoxes, selectedEvidence?.submittedRegion, {}, language, Modifier.fillMaxSize(), editable = false,coreBoxes=listOfNotNull(core))
                 else EmptyState(if (target?.question == null) tr(language,"人工欄位","人工字段","Manual field") else tr(language,"此頁未拍到","此页未拍到","Page not captured"),
                     if (target?.question == null) tr(language,"在右側輸入資料，這個欄位沒有紙面證據。","在右侧输入资料，这个字段没有纸面证据。","Enter the value in the answer panel. This field has no paper evidence.") else tr(language,"保持「未拍到」狀態，或透過補頁修訂加入此頁。","保持“未拍到”状态，或通过补页修订添加此页。","This answer remains Not captured. Add the page through a page revision if needed."))
             }, inspector = {
@@ -364,7 +384,7 @@ import java.time.format.DateTimeFormatter
                         position = "${index + 1} / ${review.targets.size}", onDirtyChanged = { dirty ->
                             editorDirty = dirty
                             if (dirty) pendingRecoveryKeys = (pendingRecoveryKeys + target.key).distinct()
-                        }, onSaveAction = { saveCurrent = it }) {
+                        }, onSaveAction = { saveCurrent = it },selectedEvidenceOptionId=ui.recognitionOptionId,onSelectEvidence={id->controller.updateProjectUi(projectId){it.copy(recognitionOptionId=id)}}) {
                         reload++; controller.updateProjectUi(projectId) { it.copy(reviewTargetKey = review.targets.getOrNull(index + 1)?.key ?: target.key) }
                     }
                 } else EmptyState(tr(language,"沒有覆核欄位","没有复核字段","No review fields"), tr(language,"此範本沒有需要覆核的題目或人工欄位。","此模板没有需要复核的题目或人工字段。","This template has no questions or manual fields to review."))
@@ -429,7 +449,7 @@ internal fun planAnswerRecoveryCarryForward(before: ReviewWorkspace, after: Answ
     return AnswerRecoveryCarryForward(pending.filterKeys { it in unchanged }, pending.keys.filterNot { it in unchanged })
 }
 
-@Composable private fun AnswerEditor(controller: Controller, review: ReviewWorkspace, target: AnswerTarget, observation: FieldObservation?, language: UiLanguage, busy: Boolean, imagesReady: Boolean, previous: (() -> Unit)?, next: (() -> Unit)?, position: String, onDirtyChanged: (Boolean) -> Unit, onSaveAction: ((() -> Unit) -> Unit), afterSave: () -> Unit) {
+@Composable private fun AnswerEditor(controller: Controller, review: ReviewWorkspace, target: AnswerTarget, observation: FieldObservation?, language: UiLanguage, busy: Boolean, imagesReady: Boolean, previous: (() -> Unit)?, next: (() -> Unit)?, position: String, onDirtyChanged: (Boolean) -> Unit, onSaveAction: ((() -> Unit) -> Unit),selectedEvidenceOptionId:String?,onSelectEvidence:(String)->Unit, afterSave: () -> Unit) {
     val existing = review.answers?.answers?.firstOrNull { it.targetKey == target.key }
     val missing = target.question?.pageId in review.revision.missingTemplatePageIds
     val initial = initialReviewAnswer(review, target)
@@ -477,24 +497,26 @@ internal fun planAnswerRecoveryCarryForward(before: ReviewWorkspace, after: Answ
                         Column(Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             Text(tr(language,"機器候選 · 未確認","机器候选 · 未确认","Machine candidate · unconfirmed"), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             Text(observation.candidate?.let { candidate -> candidate.text.ifEmpty { candidate.optionIds.joinToString { id -> target.question?.options?.firstOrNull { it.id == id }?.title ?: id } } }?.ifBlank { "—" } ?: "—")
-                            observation.candidate?.let { candidate -> OutlinedButton(onClick = { value = candidate.copy(source = AnswerSource.MACHINE_ACCEPTED, humanEdited = true) }, enabled = !busy) { Text(tr(language,"採用候選","采用候选","Use candidate")) } }
+                            observation.candidate?.let { candidate -> OutlinedButton(onClick = { value = candidate.copy(source = AnswerSource.MACHINE_ACCEPTED, humanEdited = true) }, enabled = !busy && usableCandidate(observation,review.job)) { Text(tr(language,"採用候選","采用候选","Use candidate")) } }
+                            if(observation.provenance==RecognitionProvenance.LEGACY_UNBOUND || observation.candidate?.let {it.candidateRef==null}==true)Text(tr(language,"舊候選未綁定辨識版本；可人工輸入或先重新辨識。","旧候选未绑定识别版本；可人工输入或先重新识别。","This candidate has no version binding. Enter a human answer or rerun recognition."),style=MaterialTheme.typography.bodySmall)
                             if (observation.requiresReview) Text(tr(language,"需要人工核對後保存","需要人工核对后保存","Check this candidate before saving"), style = MaterialTheme.typography.bodySmall)
                         }
                     }
                 }
+                if(observation!=null)OptionEvidenceList(observation,listOfNotNull(target.question),selectedEvidenceOptionId,language,onSelectEvidence)
                 Text(tr(language,"人工答案","人工答案","Reviewed answer"), style = MaterialTheme.typography.titleSmall)
-                EnumChoice(tr(language,"答案狀態","答案状态","Answer state"), AnswerState.entries.filterNot { it == AnswerState.NOT_CAPTURED }, value.state, { value = value.copy(state = it, text = "", optionIds = emptyList(), source = AnswerSource.MANUAL, humanEdited = true) }, language)
+                EnumChoice(tr(language,"答案狀態","答案状态","Answer state"), AnswerState.entries.filterNot { it == AnswerState.NOT_CAPTURED }, value.state, { value = value.copy(state = it, text = "", optionIds = emptyList(), source = AnswerSource.MANUAL, humanEdited = true,candidateRef=null) }, language)
                 if (value.state == AnswerState.VALUE) {
                     val question = target.question
                     if (question?.type in listOf(QuestionType.SINGLE_CHOICE, QuestionType.MULTIPLE_CHOICE)) question!!.options.forEach { option ->
                         val selected = option.id in value.optionIds
                         Row(Modifier.fillMaxWidth().clickable(enabled = !busy) {
-                            value = value.copy(optionIds = if (question.type == QuestionType.SINGLE_CHOICE) listOf(option.id) else if (selected) value.optionIds - option.id else value.optionIds + option.id, text = "", source = AnswerSource.MANUAL, humanEdited = true)
+                            value = value.copy(optionIds = if (question.type == QuestionType.SINGLE_CHOICE) listOf(option.id) else if (selected) value.optionIds - option.id else value.optionIds + option.id, text = "", source = AnswerSource.MANUAL, humanEdited = true,candidateRef=null)
                         }, verticalAlignment = Alignment.CenterVertically) {
                             if (question.type == QuestionType.SINGLE_CHOICE) RadioButton(selected, null) else Checkbox(selected, null)
                             Text(option.title + " (${option.code})", Modifier.padding(start = 8.dp))
                         }
-                    } else Field(if (question?.type == QuestionType.DATE) tr(language,"日期 YYYY-MM-DD","日期 YYYY-MM-DD","Date YYYY-MM-DD") else tr(language,"答案","答案","Answer"), value.text, { value = value.copy(text = it, source = AnswerSource.MANUAL, humanEdited = true) }, false)
+                    } else Field(if (question?.type == QuestionType.DATE) tr(language,"日期 YYYY-MM-DD","日期 YYYY-MM-DD","Date YYYY-MM-DD") else tr(language,"答案","答案","Answer"), value.text, { value = value.copy(text = it, source = AnswerSource.MANUAL, humanEdited = true,candidateRef=null) }, false)
                 }
                 Text(tr(language,"可以保存未完成的輸入；整份確認時檢查所有答案。","可以保存未完成的输入；整份确认时检查所有答案。","You can save incomplete input. Confirmation checks every answer."), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
@@ -727,6 +749,7 @@ private fun recognitionLabel(status: RecognitionJobStatus?, language: UiLanguage
     RecognitionJobStatus.FAILED -> tr(language,"辨識失敗","识别失败","Failed")
     RecognitionJobStatus.READY -> tr(language,"可覆核","可复核","Ready for review")
     RecognitionJobStatus.SUPERSEDED -> tr(language,"已有新修訂","已有新修订","Superseded")
+    RecognitionJobStatus.BLOCKED -> tr(language,"需要確認辨識設定","需要确认识别设置","Confirm recognition settings")
     null -> "—"
 }
 

@@ -4,11 +4,14 @@ import java.io.ByteArrayOutputStream
 import java.io.File
 import java.util.zip.ZipFile
 import org.junit.Assert.*
+import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.TemporaryFolder
 
 class XlsxWriterTest {
+    @get:Rule val temporary = TemporaryFolder()
     @Test fun writesSafeFourSheetWorkbookAndIndependentXmlValidation() {
-        val file = File("build/validation/xlsx-synthetic.xlsx").apply { parentFile.mkdirs() }
+        val file = temporary.newFile("synthetic.xlsx")
         val headers = listOf("编号", "繁體文字", "公式形状文字", "数字", "精确大数", "日期", "缺失", "多选A", "多选B")
         val sheets = listOf(
             XlsxSheet("Responses", headers) { sequenceOf(listOf(XlsxCell.Text("0007"), XlsxCell.Text("中文／繁體\n第二行 & < > 😀"),

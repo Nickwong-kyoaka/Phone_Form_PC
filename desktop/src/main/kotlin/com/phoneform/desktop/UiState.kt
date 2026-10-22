@@ -28,6 +28,9 @@ data class ProjectUiState(
     val exportTab: Int = 0, val exportSearch: String = "",
     val paneLeft: Float = 220f, val paneRight: Float = 340f,
     val canvasViews: Map<String,CanvasViewState> = emptyMap(),
+    val recognitionPageId: String? = null, val recognitionQuestionId: String? = null,
+    val recognitionOptionId: String? = null,
+    val recognitionTool:String = "GROUP",
 )
 
 data class DesktopUiState(
@@ -53,6 +56,7 @@ internal fun ProjectUiState.normalized() = copy(
     paneLeft = if (paneLeft.isFinite()) paneLeft.coerceIn(160f, 360f) else 220f,
     paneRight = if (paneRight.isFinite()) paneRight.coerceIn(280f, 480f) else 340f,
     canvasViews = canvasViews.mapValues { it.value.normalized() },
+    recognitionTool=recognitionTool.takeIf {name->CalibrationTool.entries.any {it.name==name}} ?: "GROUP",
 )
 
 /** Explicit decoding preserves defaults when an older/future UI preference has missing/unknown values. */
@@ -75,7 +79,8 @@ internal object DesktopUiCodec {
                     p.text("collectionDraftId"), p.text("collectionPageId"), p.text("reviewSubmissionId"),
                     p.text("reviewTargetKey"), p.text("reviewFilter") ?: "PENDING", p.text("reviewSearch") ?: "",
                     p.bool("reviewWorkspace", false), p.int("exportTab", 0), p.text("exportSearch") ?: "",
-                    p.float("paneLeft", 220f), p.float("paneRight", 340f), views).normalized()
+                    p.float("paneLeft", 220f), p.float("paneRight", 340f), views,
+                    p.text("recognitionPageId"),p.text("recognitionQuestionId"),p.text("recognitionOptionId"),p.text("recognitionTool") ?: "GROUP").normalized()
             }.orEmpty()
             defaults.copy(theme = enumValue(json.text("theme"), ThemeMode.LIGHT),
                 section = enumValue(json.text("section"), WorkspaceSection.TEMPLATE),

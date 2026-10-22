@@ -1,0 +1,58 @@
+{
+  "schemaVersion": 1,
+  "dateUtc": "2026-10-22T07:25:03.450620+00:00",
+  "expectedRowsPerWorkbook": 1,
+  "scope": "Independent stdlib OOXML data audit of known anonymous fixtures; no native Excel/UI verification",
+  "crossLanguageDataIdentical": true,
+  "passed": true,
+  "workbooks": [
+    {
+      "language": "ENGLISH",
+      "profile": "recognition",
+      "sha256": "02d821290c7884d73d44a84dcff079f75fbde95779e93156d86e6d301ead6109",
+      "responseRows": 1,
+      "responseColumns": 9,
+      "codebookRows": 9,
+      "reviewFlagRows": 1,
+      "cellFormulaCount": 0,
+      "literalFormulaTextCells": 1,
+      "leadingZeroResponseCells": 0,
+      "leadingZeroCodebookMappings": 1,
+      "checks": 48,
+      "errors": {},
+      "passed": true
+    },
+    {
+      "language": "SIMPLIFIED",
+      "profile": "recognition",
+      "sha256": "d123619644975c5cf9e3b03f490412a1e255b7c8080b28b6a2bce0d7b535c6d5",
+      "responseRows": 1,
+      "responseColumns": 9,
+      "codebookRows": 9,
+      "reviewFlagRows": 1,
+      "cellFormulaCount": 0,
+      "literalFormulaTextCells": 1,
+      "leadingZeroResponseCells": 0,
+      "leadingZeroCodebookMappings": 1,
+      "checks": 48,
+      "errors": {},
+      "passed": true
+    },
+    {
+      "language": "TRADITIONAL",
+      "profile": "recognition",
+      "sha256": "8b74613533f5dae107d6b12f9ec3cbf9eb920c3e5030e4c92786e188f1be6939",
+      "responseRows": 1,
+      "responseColumns": 9,
+      "codebookRows": 9,
+      "reviewFlagRows": 1,
+      "cellFormulaCount": 0,
+      "literalFormulaTextCells": 1,
+      "leadingZeroResponseCells": 0,
+      "leadingZeroCodebookMappings": 1,
+      "checks": 48,
+      "errors": {},
+      "passed": true
+    }
+  ]
+}

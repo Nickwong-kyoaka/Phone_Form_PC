@@ -39,6 +39,7 @@ data class QuestionDefinition(
     val label: String, val title: String, val type: QuestionType,
     val region: NormalizedRect? = null, val answerRegion: NormalizedRect? = null,
     val options: List<OptionDefinition> = emptyList(), val matrixId: String? = null,
+    val recognition: QuestionRecognitionSettings? = null,
 ) : Serializable
 
 /** Grid boundaries are fractions within region, including the 0 and 1 outer edges. */
@@ -70,7 +71,7 @@ enum class TemplateIssueCode {
     NO_PAGES, PAGE_FILE_MISSING, PAGE_WITHOUT_QUESTIONS, INVALID_PAGE,
     QUESTION_TITLE, QUESTION_REGION, ANSWER_REGION, OPTIONS_REQUIRED,
     OPTION_TITLE, OPTION_CODE, OPTION_REGION, DUPLICATE_OPTION_CODE,
-    INVALID_REFERENCE, INVALID_MATRIX, UNMAPPED_FIELD, DUPLICATE_ID,
+    INVALID_REFERENCE, INVALID_MATRIX, UNMAPPED_FIELD, DUPLICATE_ID, RECOGNITION_SETTINGS,
 }
 data class TemplateIssue(
     val code: TemplateIssueCode, val pageId: String? = null,

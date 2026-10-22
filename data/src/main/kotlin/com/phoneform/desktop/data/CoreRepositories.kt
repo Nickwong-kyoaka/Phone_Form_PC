@@ -11,7 +11,7 @@ internal class DesktopProjectRepository(private val db: DesktopRepositories) : P
             val id = details.project.id; val submissions = list<Submission>("submission", id).filterNot { it.discarded }
             val submitted = submissions.filter { it.currentRevisionId != null }
             val preparation = list<ProcessingJob>("preparation", id).filter { p -> submitted.any { it.currentRevisionId == p.submissionRevisionId } }
-            val recognition = list<RecognitionJob>("recognition", id).filter { r -> submitted.any { it.currentRevisionId == r.submissionRevisionId } }
+            val recognition = submitted.mapNotNull { s -> s.currentRevisionId?.let { recognition(it) } }
             val confirmed = submitted.filter { s -> latestAnswers(s.currentRevisionId!!)?.let { a -> confirmationForAnswer(a.id) != null } == true }.map { it.currentRevisionId }.toSet()
             val prepByRevision = preparation.associateBy { it.submissionRevisionId }
             val recognitionByRevision = recognition.associateBy { it.submissionRevisionId }
@@ -143,6 +143,7 @@ internal class DesktopTemplateRepository(private val db: DesktopRepositories) : 
         val mappings = project.fields.map { field -> if (field.source == FieldSource.MANUAL_METADATA) FieldMapping(field.id, FieldMappingState.MANUAL_ENTRY) else draft.mappings.single { it.fieldId == field.id } }
         val version = FormSchemaVersion(newId(), projectId, (list<FormSchemaVersion>("template", projectId).maxOfOrNull { it.version } ?: 0) + 1, draftId, System.currentTimeMillis(), draft.copy(mappings = mappings))
         put("template", version.id, projectId, version)
+        installInitialProfile(version)
         val fields = project.fields.map { field -> mappings.single { it.fieldId == field.id }.let { field.copy(mappingState = it.state, questionId = it.questionId) } }
         migratePolicies(projectId, fields)
         put("project", projectId, projectId, project.copy(project = project.project.copy(templateVersionId = version.id, preparationStatus = PreparationStatus.TEMPLATE_CONFIRMED, updatedAtEpochMillis = nextTime(project.project.updatedAtEpochMillis)), output = project.output.copy(version = project.output.version + 1), fields = fields))

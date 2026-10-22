@@ -211,7 +211,7 @@ import java.util.Locale
                         val knownStates = setOf("QUEUED", "RUNNING", "PAUSED", "FAILED", "READY", "SUPERSEDED")
                         val counts = tasks.value.filter { it.phase in setOf("IMAGE", "PREPARATION", "RECOGNITION") && it.status in knownStates }.groupingBy { "${it.phase}_${it.status}" }.eachCount()
                         val safeReport = linkedMapOf<String, Any>(
-                            "application" to "PhoneForm AI PC", "version" to "0.2.0-dev",
+                            "application" to "PhoneForm AI PC", "version" to "0.3.0-dev",
                             "os" to System.getProperty("os.name"), "osVersion" to System.getProperty("os.version"),
                             "architecture" to System.getProperty("os.arch"), "javaVersion" to System.getProperty("java.version"),
                             "ocrAvailable" to runtime.ocrAvailable, "openCvAvailable" to runtime.openCvAvailable,
@@ -232,7 +232,7 @@ import java.util.Locale
                 }
                 3 -> {
                     Text("PhoneForm AI PC", style = MaterialTheme.typography.headlineSmall)
-                    StatusBadge("0.2.0-dev")
+                    StatusBadge("0.3.0-dev")
                     Text(tr(language, "Windows 離線問卷辨識與人工覆核", "Windows 离线问卷识别与人工复核", "Offline questionnaire recognition and review for Windows"))
                     Text(tr(language, "PDF、JPG、PNG → 本地處理 → 人工覆核 → Excel 四表輸出。", "PDF、JPG、PNG → 本地处理 → 人工复核 → Excel 四表导出。", "PDF, JPG, PNG → local processing → human review → four-sheet Excel export."), color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Text(tr(language, "內部試用版本。資料保存在目前 Windows 使用者的加密儲存空間。", "内部试用版本。数据保存在当前 Windows 用户的加密存储中。", "Internal preview. Data is kept in encrypted storage for the current Windows user."), color = MaterialTheme.colorScheme.onSurfaceVariant)

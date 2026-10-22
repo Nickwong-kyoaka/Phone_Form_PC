@@ -14,7 +14,7 @@ internal class Records(val connection: Connection) {
     val lists = mutableMapOf<Pair<String, String?>, List<Any>>()
     inline fun <reified T> get(kind: String, id: String): T? = connection.prepareStatement("SELECT payload FROM pc_records WHERE kind=? AND id=?").use {
         it.setString(1, kind); it.setString(2, id)
-        it.executeQuery().use { rows -> if (rows.next()) gson.fromJson(rows.getString(1), T::class.java) else null }
+        it.executeQuery().use { rows -> if (rows.next()) RecordCodec.decode(rows.getString(1), T::class.java) else null }
     }
     inline fun <reified T> list(kind: String, projectId: String? = null): List<T> {
         @Suppress("UNCHECKED_CAST")
@@ -22,7 +22,7 @@ internal class Records(val connection: Connection) {
         val sql = "SELECT payload FROM pc_records WHERE kind=?" + if (projectId != null) " AND project_id=?" else ""
         val values = connection.prepareStatement(sql).use {
             it.setString(1, kind); if (projectId != null) it.setString(2, projectId)
-            it.executeQuery().use { rows -> buildList { while (rows.next()) add(gson.fromJson(rows.getString(1), T::class.java)) } }
+            it.executeQuery().use { rows -> buildList { while (rows.next()) add(RecordCodec.decode(rows.getString(1), T::class.java)) } }
         }
         @Suppress("UNCHECKED_CAST")
         lists[kind to projectId] = values as List<Any>
@@ -31,14 +31,15 @@ internal class Records(val connection: Connection) {
     fun put(kind: String, id: String, projectId: String?, value: Any) {
         lists.keys.filter { it.first == kind }.toList().forEach(lists::remove)
         connection.prepareStatement("INSERT INTO pc_records(kind,id,project_id,payload) VALUES(?,?,?,?) ON CONFLICT(kind,id) DO UPDATE SET project_id=excluded.project_id,payload=excluded.payload").use {
-            it.setString(1, kind); it.setString(2, id); it.setString(3, projectId); it.setString(4, gson.toJson(value)); it.executeUpdate()
+            it.setString(1, kind); it.setString(2, id); it.setString(3, projectId); it.setString(4, RecordCodec.encode(value)); it.executeUpdate()
         }
         // Immutable history keeps operation IDs; compact heads avoid loading that history on every edit.
         when (value) {
             is AnswerSetRevision -> { put("answer_head", value.submissionRevisionId, projectId, RecordReference(id)); put("answer_operation", value.operationId, projectId, RecordReference(id)) }
             is ReviewConfirmation -> { put("confirmation_answer", value.answerRevisionId, projectId, RecordReference(id)); put("confirmation_operation", value.operationId, projectId, RecordReference(id)) }
             is ProcessingJob -> put("preparation_head", value.submissionRevisionId, projectId, RecordReference(id))
-            is RecognitionJob -> put("recognition_head", value.submissionRevisionId, projectId, RecordReference(id))
+            // Recognition heads are changed only by explicit creation/CAS operations. Updating an
+            // old job's status must never make that job current again.
             is PageProcessingJob -> put("image_job_head", "${value.owner.kind}:${value.owner.id}:${value.owner.revision}:${value.page.id}:${value.inputFingerprint}", projectId, RecordReference(id))
         }
     }
@@ -75,14 +76,26 @@ internal class Records(val connection: Connection) {
     fun confirmationForAnswer(answerId: String): ReviewConfirmation? = get<RecordReference>("confirmation_answer", answerId)?.let { get("confirmation", it.id) }
     fun imageJob(owner: PageProcessingOwner, pageId: String, fingerprint: String): PageProcessingJob? = get<RecordReference>("image_job_head", "${owner.kind}:${owner.id}:${owner.revision}:$pageId:$fingerprint")?.let { get("image_job", it.id) }
     fun anyRunning(): Boolean = list<ProcessingJob>("preparation").any { it.status == PreparationJobStatus.RUNNING } ||
-        list<RecognitionJob>("recognition").any { it.status == RecognitionJobStatus.RUNNING } ||
+        list<RecognitionJob>("recognition").any { it.status == RecognitionJobStatus.RUNNING && recognition(it.submissionRevisionId)?.id == it.id } ||
         list<PageProcessingJob>("image_job").any { it.status == PageProcessingStatus.RUNNING }
     fun eligible(projectId: String, foreground: Boolean): Boolean = project(projectId) != null &&
         get<ProjectDeletionStatus>("deletion", projectId) == null && (foreground || collection(projectId).mode == CollectionMode.BACKGROUND_ALLOWED)
     fun enqueueRecognition(revision: SubmissionRevision) {
-        if (recognition(revision.id) == null) {
-            val job = RecognitionJob(newId(), revision.projectId, revision.submissionId, revision.id)
-            put("recognition", job.id, job.projectId, job); wake(job.projectId)
+        val pointer = get<RecordReference>("recognition_head", revision.id)
+        if (pointer != null && get<RecognitionJob>("recognition", pointer.id) == null || pointer == null && list<RecognitionJob>("recognition", revision.projectId).any { it.submissionRevisionId == revision.id })
+            throw IllegalStateException("RECOGNITION_HEAD_INVALID")
+        if (recognition(revision.id) == null && latestAnswers(revision.id)?.let { confirmationForAnswer(it.id) } == null) {
+            val profile = profileHead(revision.templateVersionId)
+            val supported = profile != null && profile.engineVersion == RecognitionContracts.ENGINE_VERSION && profile.parametersVersion == RecognitionContracts.PARAMETERS_VERSION
+            val job = RecognitionJob(newId(), revision.projectId, revision.submissionId, revision.id,
+                status = if (supported) RecognitionJobStatus.QUEUED else RecognitionJobStatus.BLOCKED,
+                profileId = profile?.id, engineVersion = profile?.engineVersion.orEmpty(),
+                inputFingerprint = profile?.let { RecognitionBindings.jobFingerprint(revision, it) }.orEmpty(),
+                provenance = if (profile != null) RecognitionProvenance.VERSIONED else RecognitionProvenance.LEGACY_UNBOUND,
+                error = if (supported) null else if (profile == null) "RECOGNITION_PROFILE_REQUIRED" else "RECOGNITION_ENGINE_UNAVAILABLE")
+            put("recognition", job.id, job.projectId, job)
+            put("recognition_head", revision.id, revision.projectId, RecordReference(job.id))
+            if (supported) wake(job.projectId)
         }
     }
     companion object { val gson = Gson() }

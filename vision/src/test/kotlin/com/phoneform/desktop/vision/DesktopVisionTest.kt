@@ -31,8 +31,11 @@ class DesktopVisionTest {
     }
     private fun choice(): QuestionDefinition = QuestionDefinition("q", "template", 0, "1", "Select", QuestionType.MULTIPLE_CHOICE,
         NormalizedRect(.05f, .84f, .7f, .97f), options = listOf(
-            OptionDefinition("a", "A", "01", NormalizedRect(.1f, .88f, .16f, .923f)),
-            OptionDefinition("b", "B", "02", NormalizedRect(.3f, .88f, .36f, .923f))))
+            OptionDefinition("a", "A", "01", NormalizedRect(.09f, .87f, .17f, .94f)),
+            OptionDefinition("b", "B", "02", NormalizedRect(.29f, .87f, .37f, .94f))))
+    private fun profile(q: QuestionDefinition)=TemplateRecognitionProfile("test-template",DesktopVision.VERSION,
+        mapOf("template" to PageProcessingFingerprint.of(page("template"))),settings=listOf(QuestionRecognitionSettings(q.id,true,
+            MarkStyle.CHECKBOX_TICK_CROSS,q.options.map { OptionMarkRegion(it.id,it.region!!) })))
     private fun addChoices(image: BufferedImage, selected: Boolean) {
         val g = image.createGraphics()
         try {
@@ -63,20 +66,22 @@ class DesktopVisionTest {
             finally { g.dispose() }
         }
         val result = DesktopVision(Path.of("missing-models")).recognize(page("template"), template, page("formal"), transformed,
-            listOf(choice()), QuestionnaireLanguage.ENGLISH)
+            listOf(choice()), QuestionnaireLanguage.ENGLISH,profile(choice()),"test-job")
         assertEquals(result.alignment.reason, AlignmentStatus.ALIGNED, result.alignment.status)
         assertEquals(9, result.alignment.templateToImage.size)
         val observation = result.observations.single()
-        assertEquals(listOf("a"), observation.candidate?.optionIds)
+        assertEquals(listOf(OptionDecision.SELECTED,OptionDecision.EMPTY),observation.optionObservations.map { it.decision })
+        if(MarkAcceptanceGate.enabled(MarkStyle.CHECKBOX_TICK_CROSS))assertEquals(listOf("a"), observation.candidate?.optionIds)
+        else assertNull(observation.candidate)
         assertTrue(observation.requiresReview)
-        assertEquals("MARKS_REQUIRE_CONFIRMATION", observation.reason)
+        assertEquals(if(MarkAcceptanceGate.enabled(MarkStyle.CHECKBOX_TICK_CROSS))"MARKS_REQUIRE_CONFIRMATION" else "STYLE_ACCEPTANCE_GATE_CLOSED", observation.reason)
     }
 
     @Test fun blankImageAlignmentFailsWithoutCroppingOrCreatingAnswers() {
         val blank = BufferedImage(1000, 1400, BufferedImage.TYPE_INT_RGB)
         blank.createGraphics().let { g -> try { g.color = Color.WHITE; g.fillRect(0, 0, 1000, 1400) } finally { g.dispose() } }
         val result = DesktopVision(Path.of("missing-models")).recognize(page("template"), printed(), page("formal"), blank,
-            listOf(choice()), QuestionnaireLanguage.ENGLISH)
+            listOf(choice()), QuestionnaireLanguage.ENGLISH,profile(choice()),"test-job")
         assertEquals(AlignmentStatus.FAILED, result.alignment.status)
         assertNull(result.observations.single().candidate)
         assertNull(result.observations.single().evidenceRegion)
@@ -96,6 +101,11 @@ class DesktopVisionTest {
         assertEquals("2024-02-29", DesktopVision.parseDate("2024/2/29"))
         assertNull(DesktopVision.parseDate("2026-02-29"))
         assertNull(DesktopVision.parseDate("=2026-10-21"))
+        assertEquals("00001",DesktopVision.parseNumber("00001"))
+        assertEquals("-0.50",DesktopVision.parseNumber("-0.50"))
+        assertNull(DesktopVision.parseNumber("6-7"))
+        assertNull(DesktopVision.parseNumber("6 7"))
+        assertNull(DesktopVision.parseNumber("=1+1"))
     }
 
     @Test fun qualityAndLightEnhancementPreserveGeometryAndExistingThinStrokes() {
@@ -105,7 +115,7 @@ class DesktopVisionTest {
             finally { g.dispose() }
         }
         val before = image.getRGB(250, 700)
-        val result = DesktopVision(Path.of("missing-models")).process(image, PageProcessingConfig(PageProcessingMode.AUTO_LIGHT))
+        val result = DesktopVision(Path.of("missing-models")).process(image, PageProcessingSpec(PageProcessingMode.AUTO_LIGHT))
         assertEquals(1000, result.image.width); assertEquals(1400, result.image.height)
         assertEquals(before, image.getRGB(250, 700))
         assertTrue(Color(result.image.getRGB(250, 700)).red <= 60)
@@ -136,5 +146,96 @@ class DesktopVisionTest {
         assertEquals(.6f,projected.left,.0001f); assertEquals(.1f,projected.top,.0001f)
         assertEquals(.8f,projected.right,.0001f); assertEquals(.3f,projected.bottom,.0001f)
         assertNull(DesktopVision.evidenceInSubmittedImage(region, List(9){0.0}))
+    }
+
+    @Test fun missingProfileCannotSilentlyReuseLegacyMarkHeuristics() {
+        val result=DesktopVision(Path.of("missing-models")).recognize(page("template"),printed(),page("formal"),printed(),listOf(choice()),QuestionnaireLanguage.ENGLISH)
+        assertEquals(AlignmentStatus.NOT_REQUIRED,result.alignment.status)
+        assertEquals("RECOGNITION_PROFILE_REQUIRED",result.observations.single().reason)
+        assertNull(result.observations.single().candidate)
+    }
+
+    @Test fun noExtractionAndNoTargetsDoNotPretendAlignmentFailed() {
+        val vision=DesktopVision(Path.of("missing-models"));val image=printed()
+        val disabled=vision.recognize(page("template").copy(noExtraction=true),image,page("formal"),image,emptyList(),QuestionnaireLanguage.ENGLISH)
+        assertEquals(AlignmentStatus.NOT_REQUIRED,disabled.alignment.status);assertEquals("NO_EXTRACTION",disabled.alignment.reason)
+        val empty=vision.recognize(page("template"),image,page("formal"),image,emptyList(),QuestionnaireLanguage.ENGLISH)
+        assertEquals(AlignmentStatus.NOT_REQUIRED,empty.alignment.status);assertTrue(empty.observations.isEmpty())
+    }
+
+    @Test fun wrongProfilePageAndVersionNeverProduceCropsOrCandidates() {
+        for(bad in listOf(profile(choice()).copy(engineVersion="old"),profile(choice()).copy(pageFingerprints=emptyMap()))) {
+            val result=DesktopVision(Path.of("missing-models")).recognize(page("template"),printed(),page("formal"),printed(),listOf(choice()),QuestionnaireLanguage.ENGLISH,bad,"job")
+            assertEquals(AlignmentStatus.NOT_REQUIRED,result.alignment.status);assertNull(result.observations.single().candidate)
+            assertTrue(result.observations.single().optionObservations.isEmpty())
+        }
+    }
+
+    @Test fun projectedOptionEvidenceHashesAndCandidateRefsAreVersionBound() {
+        val q=choice();val template=printed().also { addChoices(it,false) };val image=printed().also { addChoices(it,true) }
+        val p=profile(q)
+        val production=DesktopVision(Path.of("missing-models")).recognize(page("template"),template,page("formal"),image,listOf(q),QuestionnaireLanguage.ENGLISH,p,"job-42","a".repeat(64)).observations.single()
+        assertEquals("a".repeat(64),production.sourceSha256);assertEquals(p.id,production.profileId)
+        assertEquals(RecognitionProvenance.VERSIONED,production.provenance)
+        assertEquals(RecognitionBindings.evidenceHash(production),production.evidenceHash)
+        assertTrue(production.optionObservations.all { it.submittedRegion?.isValid()==true && it.cropSha256.length==64 })
+        production.candidate?.let { assertEquals("job-42",it.candidateRef?.jobId);assertEquals(production.evidenceHash,it.candidateRef?.evidenceHash) }
+        val preview=DesktopVision(Path.of("missing-models")).recognize(page("template"),template,page("formal"),image,listOf(q),QuestionnaireLanguage.ENGLISH,p).observations.single()
+        assertNull(preview.candidate?.candidateRef);assertTrue(preview.requiresReview)
+    }
+
+    @Test fun coreSuggestionsUseLocalOcrPixelsAndRemainUnconfirmed() {
+        val purposes=mutableListOf<OcrPurpose>()
+        val reader=object:OcrEngine {
+            override fun read(image:BufferedImage,language:QuestionnaireLanguage)=error("Purpose required")
+            override fun read(image:BufferedImage,language:QuestionnaireLanguage,purpose:OcrPurpose):List<OcrLine> {
+                purposes+=purpose;return listOf(OcrLine("2",NormalizedRect(.35f,.25f,.65f,.75f)))
+            }
+        }
+        val option=OptionMarkRegion("a",NormalizedRect(.2f,.3f,.6f,.7f))
+        val suggested=DesktopVision(Path.of("missing-models"),reader).suggestPrintedCores(printed(),listOf(option),QuestionnaireLanguage.ENGLISH).single()
+        assertEquals(listOf(OcrPurpose.PRINTED_DIGIT),purposes)
+        assertNotNull(suggested.printedCore);assertFalse(suggested.coreConfirmed)
+        assertTrue(RecognitionBindings.contains(option.region,suggested.printedCore!!))
+        val noOcr=DesktopVision(Path.of("missing-models"),OcrEngine { _,_->emptyList() }).suggestPrintedCores(printed(),listOf(option),QuestionnaireLanguage.ENGLISH).single()
+        assertNull(noOcr.printedCore)
+    }
+
+    @Test fun localScalarPurposeRetainsRawRangeAndRejectsItWithoutInventingNumber() {
+        val purposes=mutableListOf<OcrPurpose>()
+        val reader=object:OcrEngine {
+            override fun read(image:BufferedImage,language:QuestionnaireLanguage)=error("Purpose required")
+            override fun read(image:BufferedImage,language:QuestionnaireLanguage,purpose:OcrPurpose):List<OcrLine> {
+                purposes+=purpose;assertTrue(image.width<300);return listOf(OcrLine("6-7",NormalizedRect(0f,0f,1f,1f)))
+            }
+        }
+        val q=QuestionDefinition("n","template",0,"1","Hours",QuestionType.NUMBER,NormalizedRect(.1f,.85f,.4f,.96f),NormalizedRect(.15f,.88f,.25f,.93f))
+        val p=profile(choice()).copy(settings=listOf(QuestionRecognitionSettings(q.id,true,answerRegion=q.answerRegion)))
+        val result=DesktopVision(Path.of("missing-models"),reader).recognize(page("template"),printed(),page("formal"),printed(),listOf(q),QuestionnaireLanguage.ENGLISH,p,"job").observations.single()
+        assertEquals("6-7",result.rawText);assertNull(result.candidate);assertEquals("INVALID_NUMBER",result.reason)
+        assertEquals(listOf(OcrPurpose.NUMBER),purposes)
+    }
+
+    @Test fun printedZeroIsNotItsOwnSurroundingHandwrittenCircle() {
+        val empty=AnonymousMarkAcceptanceTest.fixture(MarkStyle.CIRCLED_PRINTED_NUMBER,8880L,false,holdout=true)
+        val marked=AnonymousMarkAcceptanceTest.fixture(MarkStyle.CIRCLED_PRINTED_NUMBER,8880L,true,holdout=true)
+        try {
+            assertEquals(OptionDecision.EMPTY,MarkDetectors.inspect(empty.image,MarkStyle.CIRCLED_PRINTED_NUMBER,empty.option).decision)
+            assertEquals(OptionDecision.SELECTED,MarkDetectors.inspect(marked.image,MarkStyle.CIRCLED_PRINTED_NUMBER,marked.option).decision)
+            val unconfirmed=MarkDetectors.inspect(marked.image,MarkStyle.CIRCLED_PRINTED_NUMBER,marked.option.copy(coreConfirmed=false))
+            assertEquals(OptionDecision.UNSUPPORTED,unconfirmed.decision)
+        } finally { empty.image.flush();marked.image.flush() }
+    }
+
+    @Test fun wholeQuestionAggregationCannotAcceptPartialDuplicateOrMultipleSingleSelections() {
+        val q=choice().copy(type=QuestionType.SINGLE_CHOICE)
+        val base=FieldObservation("question:q","template","formal",1)
+        val observations=q.options.map { OptionObservation(it.id,OptionDecision.SELECTED,it.region!!) }
+        assertNull(DesktopVision.aggregateChoices(q,observations,base).candidate)
+        assertNull(DesktopVision.aggregateChoices(q,observations.take(1),base).candidate)
+        assertNull(DesktopVision.aggregateChoices(q,listOf(observations[0],observations[0]),base).candidate)
+        assertNull(DesktopVision.aggregateChoices(q,observations.map { it.copy(decision=OptionDecision.AMBIGUOUS) },base).candidate)
+        val blank=DesktopVision.aggregateChoices(q,observations.map { it.copy(decision=OptionDecision.EMPTY) },base)
+        assertEquals(AnswerState.BLANK,blank.candidate?.state);assertTrue(blank.requiresReview)
     }
 }

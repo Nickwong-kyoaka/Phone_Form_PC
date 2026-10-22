@@ -1,0 +1,110 @@
+{
+  "schema": "anonymous-mark-acceptance-v1",
+  "engine": "tesseract-5.5_opencv-4.12.0_marks-1",
+  "parameters": "marks-1",
+  "parameterHash": "48fd559a1b9fd3fa4298422535145286bf2dd36c90ba719bede5da4f2685fab8",
+  "detectorSourceSha256": "732c892c925ebd401320419da169a50984ffcc0a0031f6e70cb1ed2aef7ae68d",
+  "detectorSourceHashEncoding": "UTF-8 with canonical LF line endings",
+  "parametersFrozenBeforeHoldout": true,
+  "truth": "Fixed generator labels established before any detector call",
+  "tuningClearOptionCropsPerMode": 128,
+  "tuningAmbiguousOptionCropsPerMode": 32,
+  "questionGroupComposition": {
+    "singleChoice": 40,
+    "multipleChoice": 40,
+    "allBlank": 40,
+    "ambiguous": 32,
+    "optionsEach": 4
+  },
+  "split": "Tuning, option holdout and question-group holdout have disjoint seeds; holdout adds font/style/size variants",
+  "scope": "Anonymous generated pixels only; not real-scan or general handwriting accuracy",
+  "imagesPersisted": 0,
+  "optionCropHoldout": {
+    "CHECKBOX_TICK_CROSS": {
+      "clear": 128,
+      "correct": 124,
+      "wrong": 0,
+      "abstained": 4,
+      "coverage": 0.96875,
+      "ambiguous": 32,
+      "intercepted": 32,
+      "passed": true,
+      "reasons": {
+        "CHECKBOX_BORDER_NOT_LOCALIZED": 7,
+        "CHECKBOX_MARK_NOT_CONFIDENT": 4,
+        "CHECKBOX_TICK_OR_CROSS": 63,
+        "CLOSED_LOOP_OR_CANCELLED_CHECKBOX_INK": 3,
+        "FILLED_OR_CANCELLED_CHECKBOX": 12,
+        "ISOLATED_OR_SMALL_CHECKBOX_INK": 4,
+        "OPTION_TOO_BLURRED": 6,
+        "VISIBLE_EMPTY_CHECKBOX": 61
+      }
+    },
+    "CIRCLED_PRINTED_NUMBER": {
+      "clear": 128,
+      "correct": 123,
+      "wrong": 0,
+      "abstained": 5,
+      "coverage": 0.9609375,
+      "ambiguous": 32,
+      "intercepted": 32,
+      "passed": true,
+      "reasons": {
+        "CIRCLE_AROUND_PRINTED_CORE": 64,
+        "CIRCLE_OR_INK_CROPPED": 4,
+        "ISOLATED_OUTER_INK": 4,
+        "MULTIPLE_SURROUNDING_CURVES": 4,
+        "NO_SURROUNDING_CIRCLE": 59,
+        "OPTION_TOO_BLURRED": 5,
+        "PARTIAL_CANCELLED_OR_STRAY_CIRCLE_INK": 4,
+        "PRINTED_CORE_NOT_CONFIRMED": 4,
+        "PRINTED_CORE_UNRELIABLE": 12
+      }
+    }
+  },
+  "questionGroupHoldout": {
+    "CHECKBOX_TICK_CROSS": {
+      "clear": 120,
+      "correct": 115,
+      "wrong": 0,
+      "abstained": 5,
+      "coverage": 0.9583333333333334,
+      "ambiguous": 32,
+      "intercepted": 32,
+      "passed": true,
+      "reasons": {
+        "BLANK_REQUIRES_CONFIRMATION": 36,
+        "MARKS_REQUIRE_CONFIRMATION": 79,
+        "OPTION_REQUIRES_MANUAL_REVIEW": 37
+      }
+    },
+    "CIRCLED_PRINTED_NUMBER": {
+      "clear": 120,
+      "correct": 118,
+      "wrong": 0,
+      "abstained": 2,
+      "coverage": 0.9833333333333333,
+      "ambiguous": 32,
+      "intercepted": 32,
+      "passed": true,
+      "reasons": {
+        "BLANK_REQUIRES_CONFIRMATION": 39,
+        "MARKS_REQUIRE_CONFIRMATION": 79,
+        "OPTION_REQUIRES_MANUAL_REVIEW": 34
+      }
+    }
+  },
+  "automaticCandidateGates": {
+    "CHECKBOX_TICK_CROSS": true,
+    "CIRCLED_PRINTED_NUMBER": true
+  },
+  "appVersion": "0.3.0-dev",
+  "checkedAt": "2026-10-22T15:31:56.9457426+08:00",
+  "humanAnswersUsedForMachineScore": false,
+  "blankFalseSelections": {
+    "scope": "40 all-blank complete questions per style, included in the independent 120 clear groups",
+    "CHECKBOX_TICK_CROSS": 0,
+    "CIRCLED_PRINTED_NUMBER": 0,
+    "basis": "Zero wrong candidates across every clear group; abstentions remain manual"
+  }
+}

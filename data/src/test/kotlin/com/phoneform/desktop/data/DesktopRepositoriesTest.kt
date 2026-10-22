@@ -104,8 +104,11 @@ class DesktopRepositoriesTest {
         val recognition = db.intelligence.claimRecognition("test", true)!!
         val first = db.intelligence.saveAnswer(draft.submissionId, revision.id, 0, AnswerValue("question:q1", AnswerState.VALUE, "00123"), "answer-operation")
         val page = revision.pages.single()
-        val alignment = PageAlignment(page.templatePageId, page.image.id, page.image.revision, AlignmentStatus.ALIGNED, listOf(1.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,1.0))
-        val observation = FieldObservation("question:q1", page.templatePageId, page.image.id, page.image.revision, AnswerValue("question:q1", AnswerState.VALUE, "999"), requiresReview = false)
+        val alignment = PageAlignment(page.templatePageId, page.image.id, page.image.revision, AlignmentStatus.NOT_REQUIRED, engineVersion = recognition.engineVersion)
+        // Free text is manual-only. A versioned no-candidate observation must not replace it.
+        val observation = RecognitionBindings.bind(FieldObservation("question:q1", page.templatePageId, page.image.id, page.image.revision,
+            reason = "MANUAL_TEXT_REQUIRED", engineVersion = recognition.engineVersion, processingFingerprint = PageProcessingFingerprint.of(page.image),
+            sourceSha256 = pageHash(db, page.image)), recognition.id, recognition.profileId!!)
         assertTrue(db.intelligence.checkpointRecognition(recognition, alignment, listOf(observation))); assertTrue(db.intelligence.completeRecognition(recognition))
         assertEquals("00123", db.intelligence.getReview(draft.submissionId)!!.answers!!.answers.single().text)
         assertEquals(first, db.intelligence.saveAnswer(draft.submissionId, revision.id, 0, AnswerValue("question:q1", AnswerState.VALUE, "00123"), "answer-operation"))

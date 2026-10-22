@@ -69,6 +69,25 @@ class TemplateValidationTest {
         assertEquals(listOf("submission_id", "record_id", "review_status", "submission_revision", "template_version", "completeness", "field_age"), TemplateColumns.build(project(), null).map { it.key })
     }
 
+    @Test fun nestedRecognitionSettingsMustBelongToTheirContainingQuestion() {
+        val first=question()
+        val second=first.copy(id="second",position=1,label="Q2")
+        val valid=document().copy(questions=listOf(first.copy(recognition=QuestionRecognitionSettings(first.id)),
+            second.copy(recognition=QuestionRecognitionSettings(second.id))))
+        assertTrue(TemplateValidation.validate(valid,project()).isEmpty())
+        val wrongOwner=valid.copy(questions=valid.questions.map {
+            if(it.id==first.id)it.copy(recognition=QuestionRecognitionSettings(second.id))else it
+        })
+        assertTrue(TemplateValidation.validate(wrongOwner,project()).any {
+            it.code==TemplateIssueCode.RECOGNITION_SETTINGS && it.questionId==first.id
+        })
+        val swapped=valid.copy(questions=valid.questions.map {
+            it.copy(recognition=QuestionRecognitionSettings(if(it.id==first.id)second.id else first.id))
+        })
+        assertEquals(setOf(first.id,second.id),TemplateValidation.validate(swapped,project())
+            .filter {it.code==TemplateIssueCode.RECOGNITION_SETTINGS}.map {it.questionId}.toSet())
+    }
+
     @Test fun changingFieldToMetadataIgnoresOldConfirmedQuestionMapping() {
         val multi = question().copy(type = QuestionType.MULTIPLE_CHOICE, options = listOf(
             OptionDefinition("a", "甲", "1", region), OptionDefinition("b", "乙", "2", region)))

@@ -111,6 +111,15 @@ object ExportSheetBuilder {
             require(sheet.headers.all { it.length <= 32767 } && sheet.rows.all { row -> row.all { it.value.length <= 32767 } }) { "EXCEL_CELL_LIMIT_EXCEEDED" }
         }
         return ExportSnapshot(id, project.project.id, project.project.name, project.output.version, includeUnresolved, System.currentTimeMillis(),
-            workspaces.map { ExportRecordReference(it.submission.id, it.revision.id, it.answers?.id, it.confirmation?.id) }, excluded, sheets)
+            workspaces.map { workspace ->
+                val visibleTargets = columns.mapNotNull(::key).toSet()
+                val saved = workspace.answers?.answers.orEmpty().associateBy { it.targetKey }
+                val references = visibleTargets.mapNotNull { target ->
+                    val answer = saved[target]
+                    if (answer != null && (answer.state != AnswerState.UNHANDLED || answer.humanEdited)) answer.candidateRef
+                    else if (includeUnresolved) workspace.job?.observations?.find { it.targetKey == target }?.candidate?.candidateRef else null
+                }.distinct()
+                ExportRecordReference(workspace.submission.id, workspace.revision.id, workspace.answers?.id, workspace.confirmation?.id, references)
+            }, excluded, sheets)
     }
 }

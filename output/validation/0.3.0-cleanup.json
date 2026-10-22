@@ -1,0 +1,33 @@
+{
+  "date": "2026-10-22T15:40:19.1211942+08:00",
+  "appVersion": "0.3.0-dev",
+  "scope": "Four explicitly named disposable anonymous PC-R4 workspaces and two exact generated unit-test workbook files. No external PDFs, toolchains, default user workspace or original installers deleted.",
+  "counts": {
+    "workspaces": 4,
+    "files": 43,
+    "filesWithWorkbookExtension": 14,
+    "filesWithImageExtension": 12,
+    "otherFiles": 17,
+    "plaintextQaWorkbooks": 11,
+    "plaintextQaImages": 4,
+    "additionalBuildWorkbooks": 2,
+    "note": "Extension counts include encrypted AssetStore files. Plaintext counts cover root-level QA outputs and two historical fixed-output unit-test workbooks. Both unit tests now use JUnit TemporaryFolder with all assertions retained."
+  },
+  "targetsAbsent": true,
+  "questionnaireArtifactsRetainedInGit": false,
+  "publicEvidence": "Only generator/verifier code and anonymous aggregates; generated workbook/image evidence removed after verification",
+  "preservedInstallers": [
+    {
+      "version": "PhoneForm-AI-PC-0.1.0-dev",
+      "sha256": "e00ef974557c3d7520b6530b97f367dc9ab41aa65496b165d5e4fee2aa38c9ea"
+    },
+    {
+      "version": "PhoneForm-AI-PC-0.2.0-dev",
+      "sha256": "95a827947aa34afe1a1587f62656e41631fe901340861d0ba3ce4b0a5aa0c240"
+    },
+    {
+      "version": "PhoneForm-AI-PC-0.3.0-dev",
+      "sha256": "f590db1da68a5c804efbd74858423c18bea6ea8f126c2864bc622b88ce7368c6"
+    }
+  ]
+}

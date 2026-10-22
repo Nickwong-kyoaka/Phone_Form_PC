@@ -198,34 +198,13 @@ object OpenCvGeometry {
         }
     }
 
-    /** Border-trimmed foreground measurement: ambiguous marks remain review-only. */
+    /** Compatibility diagnostic for checkbox callers only. Production requires an explicit profile/style. */
     fun marked(bitmap: BufferedImage, region: NormalizedRect): Boolean? {
-        requireAvailable()
         if (!region.isValid()) return null
-        val left = (region.left * bitmap.width).toInt().coerceIn(0, bitmap.width - 1)
-        val top = (region.top * bitmap.height).toInt().coerceIn(0, bitmap.height - 1)
-        val width = ((region.right * bitmap.width).toInt() - left).coerceIn(1, bitmap.width - left)
-        val height = ((region.bottom * bitmap.height).toInt() - top).coerceIn(1, bitmap.height - top)
-        if (min(width, height) < 10) return null
-        val crop = bitmap.getSubimage(left, top, width, height)
-        val gray = gray(crop); val binary = Mat(); var inner: Mat? = null
-        val labels = Mat(); val stats = Mat(); val centroids = Mat()
-        try {
-            Imgproc.threshold(gray, binary, 0.0, 255.0, Imgproc.THRESH_BINARY_INV or Imgproc.THRESH_OTSU)
-            val dx = max(2, (width * .22).toInt()); val dy = max(2, (height * .22).toInt())
-            val interior = binary.submat(Rect(dx, dy, width - 2 * dx, height - 2 * dy)); inner = interior
-            val ratio = Core.countNonZero(interior).toDouble() / interior.total()
-            if (ratio < .015) return false
-            val count = Imgproc.connectedComponentsWithStats(interior, labels, stats, centroids)
-            val components = (1 until count).filter { stats.get(it, Imgproc.CC_STAT_AREA)[0] >= 3 }
-            if (components.size != 1 || ratio > .75) return null
-            val component = components.single()
-            val spanX = stats.get(component, Imgproc.CC_STAT_WIDTH)[0] / interior.cols()
-            val spanY = stats.get(component, Imgproc.CC_STAT_HEIGHT)[0] / interior.rows()
-            return if (ratio >= .06 && spanX >= .35 && spanY >= .35) true else null
-        } finally {
-            inner?.release(); gray.release(); binary.release(); labels.release(); stats.release(); centroids.release()
-            if (crop !== bitmap) crop.flush()
+        return when(MarkDetectors.inspect(bitmap,MarkStyle.CHECKBOX_TICK_CROSS,OptionMarkRegion("diagnostic",region)).decision) {
+            OptionDecision.SELECTED -> true
+            OptionDecision.EMPTY -> false
+            OptionDecision.AMBIGUOUS,OptionDecision.UNSUPPORTED -> null
         }
     }
 

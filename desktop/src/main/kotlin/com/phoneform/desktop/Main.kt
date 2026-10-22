@@ -81,7 +81,7 @@ fun main() {
             Item(tr(language,"退出","退出","Exit"), onClick = { exitSafely() })
         })
     }
-    Window(visible = visible, title = "PhoneForm AI PC · 0.2.0-dev",
+    Window(visible = visible, title = "PhoneForm AI PC · 0.3.0-dev",
         state = rememberWindowState(width = minOf(1280,workArea.width).dp, height = minOf(860,workArea.height-36).dp),
         onCloseRequest = {
             if (snapshot.settings.closeBehavior == CloseBehavior.SYSTEM_TRAY && systemTraySupported) visible = false else exitSafely()
@@ -162,12 +162,28 @@ fun enumLabel(language: UiLanguage, name: String): String = when(name) {
     "BLANK" -> tr(language,"空白","空白","Blank"); "NOT_APPLICABLE" -> tr(language,"不適用","不适用","Not applicable")
     "UNREADABLE" -> tr(language,"無法辨認","无法辨认","Unreadable"); "NOT_CAPTURED" -> tr(language,"未拍到","未拍到","Not captured")
     "ALL" -> tr(language,"全部題目","全部题目","All questions"); "SELECTED" -> tr(language,"指定欄位","指定字段","Selected fields")
+    "CHECKBOX_TICK_CROSS" -> tr(language,"方框勾選／交叉","方框勾选／交叉","Checkbox tick / cross")
+    "CIRCLED_PRINTED_NUMBER" -> tr(language,"圈選印刷數字","圈选印刷数字","Circled printed number")
+    "MANUAL_ONLY" -> tr(language,"只作人工輸入","仅人工输入","Manual only")
+    "EMPTY" -> tr(language,"無標記","无标记","Unmarked")
+    "AMBIGUOUS" -> tr(language,"不確定","不确定","Ambiguous")
+    "UNSUPPORTED" -> tr(language,"未處理","未处理","Not processed")
+    "BLOCKED" -> tr(language,"需要確認辨識設定","需要确认识别设置","Confirm recognition settings")
+    "NOT_REQUIRED" -> tr(language,"無啟用辨識，毋須對齊","无启用识别，无需对齐","No enabled recognition; alignment not required")
+    "RECOGNITION_SETTINGS" -> tr(language,"辨識設定未完成","识别设置未完成","Recognition settings incomplete")
     else -> name
 }
 fun message(language: UiLanguage, code: String): String = when(code.substringBefore(':')) {
     "EXPORT_SAVED" -> tr(language,"Excel 已保存。","Excel 已保存。","Excel saved.")
     "STALE_EDIT_RELOAD" -> tr(language,"資料已更新。請重新載入後再保存，原輸入仍保留。","数据已更新。请重新加载后再保存，原输入仍保留。","Data changed. Reload before saving; your input is retained.")
+    "RECOGNITION_SETTINGS_REQUIRED","RECOGNITION_PROFILE_REQUIRED" -> tr(language,"請先開啟「辨識設定」，核對並確認後再重跑。","请先打开“识别设置”，核对并确认后再重跑。","Open Recognition settings, check and confirm them, then rerun.")
+    "RECOGNITION_SETTINGS_INVALID","RECOGNITION_PROFILE_INVALID","TEMPLATE_INVALID" -> tr(language,"尚有題目或辨識設定未完成。請核對選項範圍、代碼及數字核心後再確認。","尚有题目或识别设置未完成。请检查选项区域、代码及数字核心后再确认。","Some questions or recognition settings are incomplete. Check option regions, codes and printed cores before confirming.")
+    "RECOGNITION_PAGE_CHANGED","RECOGNITION_INPUT_CHANGED" -> tr(language,"頁面或提交版本已改變，原草稿保留。請重新載入設定或使用目前修訂重跑。","页面或提交版本已改变，原草稿保留。请重新加载设置或对当前修订重跑。","The page or submission changed. Your draft is retained. Reload settings or rerun the current revision.")
+    "RECOGNITION_ENGINE_UNSUPPORTED","RECOGNITION_ENGINE_UNAVAILABLE" -> tr(language,"這份設定使用不同辨識引擎版本，請重新確認目前設定。","该设置使用不同识别引擎版本，请重新确认当前设置。","These settings use a different engine version. Confirm settings for the current engine.")
+    "RECOGNITION_EVIDENCE_CHANGED","CANDIDATE_REFERENCE_CHANGED" -> tr(language,"候選證據已改變，未套用舊候選。請重新辨識或人工輸入。","候选证据已改变，未应用旧候选。请重新识别或人工输入。","Candidate evidence changed. The old candidate was not applied. Rerun or enter a human answer.")
+    "REVIEW_ALREADY_CONFIRMED","QUESTIONNAIRE_CONFIRMED" -> tr(language,"此份已確認，未重新辨識。已保存答案保留。","该份已确认，未重新识别。已保存答案保留。","This questionnaire is confirmed and was not rerun. Saved answers are retained.")
     "REVIEW_INCOMPLETE" -> tr(language,"請先處理全部未完成或無效答案。","请先处理全部未完成或无效答案。","Resolve all unhandled or invalid answers first.")
+    "EDITOR_RECOVERY_PENDING" -> tr(language,"仍有保留的題目或整組編輯，請先完成或明確放棄後再確認。","仍有保留的题目或整组编辑，请先完成或明确放弃后再确认。","Retained question or group edits need attention. Complete or explicitly discard them before confirming.")
     "ACTION_BUSY" -> tr(language,"操作仍在進行，完成後可再次退出。","操作仍在进行，完成后可再次退出。","An operation is still running. Exit again when it finishes.")
     "TEMPLATE_LOCKED","TEMPLATE_STRUCTURE_LOCKED" -> tr(language,"此範本已鎖定，請另建專案使用不同問卷結構。","此模板已锁定，请另建项目使用不同问卷结构。","This template is locked. Create a project for a different questionnaire design.")
     "PAGE_SLOTS_INVALID","NO_PAGES" -> tr(language,"請選擇頁面並核對頁槽。","请选择页面并核对页槽。","Select pages and check their slots.")

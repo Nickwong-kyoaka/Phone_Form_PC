@@ -1,12 +1,14 @@
 package com.phoneform.ai.core.data
 
 import com.phoneform.ai.core.model.*
-import java.io.File
 import org.junit.Assert.*
+import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.TemporaryFolder
 
-/** Reproducible synthetic workbook for an independent openpyxl/Excel check. */
+/** Synthetic workbook assertions retain no plaintext output after the test. */
 class ExportLayoutWorkbookTest {
+    @get:Rule val temporary = TemporaryFolder()
     @Test fun selectedColumnsRenamedOrderMissingStatesAndPrivacyShareOneFrozenPlan() {
         val region = NormalizedRect(.1f, .1f, .9f, .9f)
         val choice = QuestionDefinition("choice", "choices-page", 0, "1", "多选", QuestionType.MULTIPLE_CHOICE, region, region,
@@ -51,7 +53,7 @@ class ExportLayoutWorkbookTest {
         assertFalse(text.contains("PRIVATE_"))
         assertFalse(text.contains("EXCLUDED_"))
         assertTrue(snapshot.sheets.single { it.name == "Review_Flags" }.rows.any { it[2].value == "NOT_CAPTURED" })
-        val file = File("build/validation/xlsx-v08-layout.xlsx").apply { parentFile?.mkdirs() }
+        val file = temporary.newFile("layout.xlsx")
         val counts = file.outputStream().use { output -> XlsxWriter.write(output, snapshot.sheets.map { sheet -> XlsxSheet(sheet.name, sheet.headers) {
             sheet.rows.asSequence().map { row -> row.map { cell -> when {
                 cell.value.isEmpty() -> XlsxCell.Empty

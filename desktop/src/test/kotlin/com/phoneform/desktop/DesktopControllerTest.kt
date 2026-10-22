@@ -58,6 +58,64 @@ class DesktopControllerTest {
         }
     }
 
+    @Test fun scopedPreviewIgnoresOtherIncompleteQuestionsWithoutPublishingOrWritingAnswers() = runBlocking {
+        controller().use { c ->
+            val id=project(c)
+            c.importTemplate(source(),listOf(0))
+            val draft=c.templateDraft()
+            val page=draft.pages.single()
+            val boxRegions=listOf(NormalizedRect(.15f,.20f,.25f,.30f),NormalizedRect(.40f,.20f,.50f,.30f))
+            val circleRegions=listOf(NormalizedRect(.15f,.55f,.30f,.70f),NormalizedRect(.45f,.55f,.60f,.70f))
+            val questions=listOf(
+                QuestionDefinition("checkbox",page.id,0,"1","Anonymous checkbox",QuestionType.SINGLE_CHOICE,
+                    NormalizedRect(.10f,.15f,.60f,.35f),options=listOf(
+                        OptionDefinition("box-a","A","A",boxRegions[0]),OptionDefinition("box-b","B","B",boxRegions[1]))),
+                QuestionDefinition("circle",page.id,1,"2","Anonymous printed number",QuestionType.SINGLE_CHOICE,
+                    NormalizedRect(.10f,.50f,.70f,.75f),options=listOf(
+                        OptionDefinition("circle-zero","0","0",circleRegions[0]),OptionDefinition("circle-one","1","1",circleRegions[1]))))
+            // Confirm the structure with manual settings, then save an intentionally incomplete calibration draft.
+            val saved=c.saveTemplate(draft.copy(questions=questions))
+            c.repositories.imageProcessing.keepAllWarnings(PageProcessingOwner(id,PageProcessingOwnerKind.TEMPLATE_DRAFT,saved.id,saved.revision),
+                mapOf(page.id to PageProcessingFingerprint.of(page)),"Anonymous source reviewed")
+            c.confirmTemplate();c.refresh()
+            val template=c.repositories.templates.observeConfirmed(id).first()!!
+            val published=c.repositories.intelligence.getRecognitionProfile(template.id)!!
+            assertTrue(published.settings.none { it.enabled })
+            val calibration=c.loadRecognitionDraft()
+            val configured=c.saveRecognitionDraft(calibration.copy(settings=listOf(
+                QuestionRecognitionSettings("checkbox",true,MarkStyle.CHECKBOX_TICK_CROSS,listOf(
+                    OptionMarkRegion("box-a",boxRegions[0]),OptionMarkRegion("box-b",boxRegions[1]))),
+                QuestionRecognitionSettings("circle",true,MarkStyle.CIRCLED_PRINTED_NUMBER,listOf(
+                    OptionMarkRegion("circle-zero",circleRegions[0],NormalizedRect(.20f,.60f,.25f,.65f),false),
+                    OptionMarkRegion("circle-one",circleRegions[1],NormalizedRect(.50f,.60f,.55f,.65f),false))))))
+            assertTrue(RecognitionBindings.validate(template.document,configured.settings).any { it.startsWith("CORE_CONFIRMATION_REQUIRED:") })
+            fun recognitionRecordCounts():Map<String,Int> = c.workspace.database.read { connection ->
+                connection.prepareStatement("SELECT kind,count(*) FROM pc_records WHERE project_id=? AND (kind LIKE 'recognition%' OR kind IN ('answers','confirmation','export')) GROUP BY kind").use { query ->
+                    query.setString(1,id)
+                    query.executeQuery().use { rows -> buildMap { while(rows.next())put(rows.getString(1),rows.getInt(2)) } }
+                }
+            }
+            val before=recognitionRecordCounts()
+            val preview=c.previewRecognition(configured,page.id,setOf("checkbox"))
+            assertEquals(page.id,preview.alignment.templatePageId)
+            assertEquals(listOf("question:checkbox"),preview.observations.map { it.targetKey })
+            val observation=preview.observations.single()
+            assertEquals("preview:${configured.id}",observation.profileId)
+            assertEquals(page.id,observation.imageId)
+            assertEquals(Controller.hash(c.workspace.assets.readBytes(page.renderPath)),observation.sourceSha256)
+            assertEquals(PageProcessingFingerprint.of(page),observation.processingFingerprint)
+            assertEquals(RecognitionProvenance.VERSIONED,observation.provenance)
+            assertEquals(RecognitionBindings.evidenceHash(observation),observation.evidenceHash)
+            assertNull(observation.candidate?.candidateRef)
+            try { c.previewRecognition(configured,page.id);fail("Whole-page preview accepted an unconfirmed printed core") }
+            catch(expected:IllegalArgumentException) { assertEquals("RECOGNITION_SETTINGS_INVALID",expected.message) }
+            assertEquals(before,recognitionRecordCounts())
+            assertEquals(published,c.repositories.intelligence.getRecognitionProfile(template.id))
+            assertEquals(configured,c.repositories.intelligence.beginRecognitionProfileDraft(template.id))
+            assertTrue(c.repositories.intelligence.observeRecognitionJobs(id).first().isEmpty())
+        }
+    }
+
     @Test fun workerProcessesCurrentEvidenceWithFixedMissingMiddleSlotAndHonorsPause() = runBlocking {
         controller().use { c ->
             val id=project(c);val file=source()

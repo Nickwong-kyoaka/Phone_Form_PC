@@ -36,4 +36,14 @@ class OfflineOcrTest {
         assertTrue("Simplified OCR must retain real Chinese glyphs: $simplified", simplified.any { it in '\u4e00'..'\u9fff' })
         assertTrue("Traditional OCR must retain real Chinese glyphs: $traditional", traditional.any { it in '\u4e00'..'\u9fff' })
     }
+
+    @Test fun localPurposesReadOnlyNumbersAndFullDatesWithoutCoercingRanges() {
+        val reader=Tess4jOcrEngine(models)
+        val number=reader.read(image("00001"),QuestionnaireLanguage.ENGLISH,OcrPurpose.NUMBER).joinToString(" "){it.text}.trim()
+        assertEquals("00001",DesktopVision.parseNumber(number))
+        val date=reader.read(image("2024/02/29"),QuestionnaireLanguage.ENGLISH,OcrPurpose.DATE).joinToString(" "){it.text}.trim()
+        assertEquals("2024-02-29",DesktopVision.parseDate(date))
+        val range=reader.read(image("6-7"),QuestionnaireLanguage.ENGLISH,OcrPurpose.NUMBER).joinToString(" "){it.text}.trim()
+        assertTrue(range,range.contains("-"));assertNull(DesktopVision.parseNumber(range))
+    }
 }

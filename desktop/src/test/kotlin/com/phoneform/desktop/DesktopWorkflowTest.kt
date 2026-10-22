@@ -79,6 +79,44 @@ class DesktopWorkflowTest {
             val collectionMillis = (System.nanoTime() - phaseStart) / 1_000_000
             val summary = db.projects.observeProjectSummaries().first().single()
             assertEquals(count, summary.submittedCount); assertEquals(count, summary.confirmedCount)
+            // These repository APIs return complete lists; there is no paged/search query API.
+            // Measure the real encrypted reads separately from the same in-memory filter used by ReviewPanel.
+            val listStart = System.nanoTime()
+            val listedSubmissions = db.submissions.observeSubmissions(projectId).first()
+            val submissionListReadNanos = System.nanoTime() - listStart
+            val reviewListStart = System.nanoTime()
+            val listedReviews = db.intelligence.observeReviewSummaries(projectId).first()
+            val reviewListReadNanos = System.nanoTime() - reviewListStart
+            assertEquals((1..count).toList(), listedSubmissions.map { it.number })
+            assertEquals((1..count).toList(), listedReviews.map { it.number })
+            val submissionsById = listedSubmissions.associateBy { it.id }
+            val searchCases = listOf(
+                "" to (1..count).toList(),
+                "00001" to listOf(1),
+                "%05d".format(count) to listOf(count),
+                "0000" to (1..minOf(count, 9)).toList(),
+                "anonymous-no-match" to emptyList(),
+            )
+            val searchNanos = mutableListOf<Long>()
+            repeat(5) {
+                searchCases.forEach { (query, expectedNumbers) ->
+                    val searchStart = System.nanoTime()
+                    val found = listedReviews.filter { item ->
+                        query.isBlank() || item.number.toString().contains(query, true) ||
+                            submissionsById[item.submissionId]?.respondentId.orEmpty().contains(query, true)
+                    }
+                    searchNanos += System.nanoTime() - searchStart
+                    assertEquals(expectedNumbers, found.map { it.number })
+                }
+            }
+            val filterStart = System.nanoTime()
+            val confirmedRows = listedReviews.filter { it.confirmed }
+            val pendingRows = listedReviews.filterNot { it.confirmed }
+            val exceptionRows = listedReviews.filter { it.hasExceptions || it.missingPageCount > 0 }
+            val clientStatusFilterNanos = System.nanoTime() - filterStart
+            assertEquals(count, confirmedRows.size); assertTrue(pendingRows.isEmpty()); assertTrue(exceptionRows.isEmpty())
+            val clientSearchMeanNanos = searchNanos.sum() / searchNanos.size
+            val clientSearchP95Nanos = searchNanos.sorted()[((searchNanos.size * 95 + 99) / 100 - 1).coerceIn(searchNanos.indices)]
             val exportStart = System.nanoTime()
             val exports = mutableListOf<Pair<String, Long>>()
             for (language in OutputHeaderLanguage.entries) {
@@ -96,17 +134,40 @@ class DesktopWorkflowTest {
                 // Keep plaintext QA copies in JUnit's TemporaryFolder, removed automatically after the test.
                 val reviewCopy = folder.root.toPath().resolve("workflow-$count-${language.name}.xlsx")
                 Files.createDirectories(reviewCopy.parent); Files.write(reviewCopy, bytes.toByteArray())
+                // Explicit opt-in retains anonymous files for the independent OOXML data verifier.
+                // Normal tests retain no plaintext workbook; retained QA data is disposable after inspection.
+                if (retained != null) Files.write(root.resolve("review-${language.name}.xlsx"), bytes.toByteArray())
                 val info = ProjectOperationGate.shared.withLease(projectId) { workspace.assets.put("exports/${language.name}/acceptance.xlsx", ByteArrayInputStream(bytes.toByteArray())) }
                 db.intelligence.saveExportArtifact(ExportArtifact(snapshot.id, ExportArtifactStatus.READY, info.relativePath, info.sha256, info.byteCount))
                 exports += language.name to info.byteCount
             }
             val exportMillis = (System.nanoTime() - exportStart) / 1_000_000
-            workspace.close(); workspace = SecureWorkspace.open(root); db = DesktopRepositories(workspace)
+            workspace.close()
+            val reopenStart = System.nanoTime()
+            workspace = SecureWorkspace.open(root); db = DesktopRepositories(workspace)
+            val workspaceReopenMillis = (System.nanoTime() - reopenStart) / 1_000_000
+            val restartReadStart = System.nanoTime()
+            assertEquals(listedSubmissions, db.submissions.observeSubmissions(projectId).first())
+            assertEquals(listedReviews, db.intelligence.observeReviewSummaries(projectId).first())
             assertEquals(count, db.projects.observeProjectSummaries().first().single().confirmedCount)
             assertEquals(3, db.intelligence.observeExports(projectId).first().size)
+            val restartRecords = setOf(1, (count + 1) / 2, count)
+            restartRecords.forEach { number ->
+                val persisted = requireNotNull(db.intelligence.getReview(listedSubmissions.single { it.number == number }.id))
+                assertNotNull(persisted.confirmation)
+                val savedAnswers = requireNotNull(persisted.answers).answers.associateBy { it.targetKey }
+                assertEquals(questions.size, savedAnswers.size)
+                questions.forEachIndexed { index, question ->
+                    val answer = requireNotNull(savedAnswers["question:${question.id}"])
+                    val expected = if (index == 0) "%05d".format(number) else if (index == 8) "=1+1" else "答案 ${number - 1} / answer $index"
+                    assertEquals(expected, answer.text); assertEquals(AnswerState.VALUE, answer.state)
+                    assertEquals(AnswerSource.MANUAL, answer.source); assertTrue(answer.humanEdited)
+                }
+            }
+            val restartVerificationMillis = (System.nanoTime() - restartReadStart) / 1_000_000
             val peakHeap = ManagementFactory.getMemoryPoolMXBeans().filter { it.type == MemoryType.HEAP }.sumOf { it.peakUsage.used }
             val totalMillis = (System.nanoTime() - started) / 1_000_000
-            val result = """{"date":"${OffsetDateTime.now(ZoneOffset.ofHours(8))}","records":$count,"pagesPerRecord":2,"targetsPerRecord":9,"headerLanguages":3,"collectionMillis":$collectionMillis,"exportMillis":$exportMillis,"totalMillis":$totalMillis,"peakHeapPoolBytes":$peakHeap,"encryptedDatabaseBytes":${Files.size(root.resolve("phoneform.db"))},"xlsxBytes":{${exports.joinToString(",") { "\"${it.first}\":${it.second}" }}}}"""
+            val result = """{"date":"${OffsetDateTime.now(ZoneOffset.ofHours(8))}","records":$count,"pagesPerRecord":2,"targetsPerRecord":9,"headerLanguages":3,"collectionMillis":$collectionMillis,"exportMillis":$exportMillis,"totalMillis":$totalMillis,"peakHeapPoolBytes":$peakHeap,"encryptedDatabaseBytes":${Files.size(root.resolve("phoneform.db"))},"listSearch":{"scope":"full repository reads plus client-side filtering; no UI latency or thumbnail measurement","repositoryPagingSupported":false,"repositorySearchSupported":false,"submissionListReadNanos":$submissionListReadNanos,"reviewSummaryReadNanos":$reviewListReadNanos,"searchSamples":${searchNanos.size},"clientSearchMeanNanos":$clientSearchMeanNanos,"clientSearchP95Nanos":$clientSearchP95Nanos,"clientStatusFilterNanos":$clientStatusFilterNanos,"allRows":$count,"confirmedRows":${confirmedRows.size},"pendingRows":${pendingRows.size},"exceptionRows":${exceptionRows.size}},"restart":{"workspaceReopenMillis":$workspaceReopenMillis,"verificationMillis":$restartVerificationMillis,"listRecordsVerified":$count,"answerRecordsVerified":${restartRecords.size},"answerValuesVerified":${restartRecords.size * questions.size},"exportsVerified":3},"xlsxBytes":{${exports.joinToString(",") { "\"${it.first}\":${it.second}" }}}}"""
             val report = Path.of("build", "reports", "acceptance", "workflow-$count.json")
             Files.createDirectories(report.parent); Files.writeString(report, result)
             println("WORKFLOW_ACCEPTANCE $result")

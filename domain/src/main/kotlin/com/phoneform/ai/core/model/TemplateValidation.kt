@@ -40,6 +40,10 @@ object TemplateValidation {
         }
         draft.questions.forEach { question ->
             fun questionIssue(code: TemplateIssueCode) = issue(code, question.pageId, question.id)
+            question.recognition?.let {
+                if (it.questionId != question.id || RecognitionBindings.validate(draft, listOf(it)).isNotEmpty())
+                    questionIssue(TemplateIssueCode.RECOGNITION_SETTINGS)
+            }
             if (question.pageId !in pages || (question.matrixId != null && question.matrixId !in matrices)) questionIssue(TemplateIssueCode.INVALID_REFERENCE)
             if (question.title.isBlank() || question.label.isBlank()) questionIssue(TemplateIssueCode.QUESTION_TITLE)
             if (question.region?.isValid() != true) questionIssue(TemplateIssueCode.QUESTION_REGION)
