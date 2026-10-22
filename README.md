@@ -6,8 +6,6 @@ Windows 11 x64 独立离线问卷处理程序 / Standalone offline questionnaire
 
 **Create a project → confirm its template → import one questionnaire → recognize locally → review → export Excel**
 
-![Review workspace](output/validation/uiux-0.2.0/preview.png)
-
 ## 下载与版本 / Downloads
 
 | Version | Description | Release |
@@ -64,9 +62,13 @@ Kotlin 2.1.20 / Compose Desktop 1.8.2 / JDK 21 / JVM target 17 / Gradle 8.9. `Pr
 
 ## 验证与文档 / Verification and documentation
 
-0.2.0-dev：92 项不同自动化测试通过。已抽查三语、明暗主题、窄窗口、快捷保存和重启恢复；三份新合成工作簿经原生 Microsoft Excel 开启检查，无修复提示，独立 XLSX 核对通过。
+0.2.0-dev 的历史执行记录：2026-10-21 有 92 项不同自动化测试通过，并完成指定三语、明暗主题、窄窗口、快捷保存和重启恢复抽查。当时三份合成工作簿经原生 Microsoft Excel 开启检查，无修复提示，独立 XLSX 核对通过。
 
-For 0.2.0-dev, all 92 distinct automated tests passed. Selected language/theme/layout, save and restart checks passed. Three new synthetic workbooks opened in native Microsoft Excel without repair prompts and passed independent XLSX checks.
+Historical execution records for 0.2.0-dev show 92 distinct automated tests passed on 2026-10-21, along with selected language/theme/layout, save and restart checks. At that time, three synthetic workbooks opened in native Microsoft Excel without repair prompts and passed independent XLSX checks.
+
+2026-10-22 按使用者要求，从最新版 `main` 清除测试问卷、派生 Excel、截图和相关逐项验证证据；保留源码、自动化测试及构建汇总。历史提交、标签和两个 MSI Release 保留。旧测试产物已不能从最新版 `main` 取得，构建汇总不能替代已清除的实测证据。
+
+On 2026-10-22, test questionnaires, derived workbooks, screenshots and their detailed validation evidence were removed from the latest `main` at the user's request. Source code, automated tests and build summaries remain. Historical commits, tags and both MSI Releases are preserved. The removed test artifacts are no longer available from the latest `main`; build summaries do not replace that evidence.
 
 完整三语人工流程、100%/150%/200% DPI、新界面 1,000 份数据、干净 Windows 安装/升级及剩余故障与授权声明审计仍待完成。历史规模测试重用合成图片，不代表真实扫描吞吐或 OCR 准确率。
 
@@ -75,7 +77,6 @@ Full manual journeys in all three languages, the DPI matrix, 1,000 submissions i
 - [工作阶段 / Progress and evidence](工作阶段.md)
 - [规划 / Product and architecture plan](规划.md)
 - [0.2 release notes](docs/releases/0.2.0-dev.md) / [0.1 archive notes](docs/releases/0.1.0-dev.md)
-- [Build summary](output/validation/build-summary.json) / [UI checks](output/validation/uiux-0.2.0/acceptance.json)
-- [Native Excel checks](output/validation/uiux-0.2.0/excel-native.json) / [Independent XLSX checks](output/validation/uiux-0.2.0/xlsx-static.json)
+- [Build summary](output/validation/build-summary.json)
 - [Verified GitHub publication](output/validation/github-publication.json)
 - [Third-party inventory](runtime/THIRD_PARTY_NOTICES.txt); component licenses/manifests are retained under `runtime/`. Source provenance is recorded in each applicable module.

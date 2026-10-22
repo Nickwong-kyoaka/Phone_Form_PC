@@ -170,8 +170,10 @@
       "timestamp": "2026-10-21T08:01:25"
     }
   ],
-  "ui": "Backend-seeded synthetic project visual inspection; not a full manual journey",
-  "excelNative": "PASS: all six synthetic workbooks opened in native Excel without repair prompts; four sheets readable; count and text spot checks passed",
   "cleanMachine": "UNVERIFIED",
-  "excelNativeEvidence": "excel-native-20261021.json"
+  "evidenceRemoval": {
+    "date": "2026-10-22",
+    "scope": "Latest main only; historical commits, tags and both MSI Releases preserved.",
+    "reason": "User-requested removal of test questionnaires and derived workbook, screenshot and detailed QA evidence. Build, runtime and automated-test metadata retained; removed evidence is no longer available from latest main."
+  }
 }

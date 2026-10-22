@@ -521,7 +521,7 @@ PC不是直接使用Android的PdfRenderer、Binder或代理描述符，而是需
 - [独立合成试用包](output/trial-v07/README.md)：简繁两套，每套两页模板、10份填写PDF及图片、人工真值、列映射、异常文件；历史v07包名是固定材料身份，不是只适用于旧App。
 - [合成生成器](scripts/generate_trial_v07.py)和[独立Excel核对器](scripts/verify_trial_exports_v07.py)：可作为PC等价验收参考，不把人工回填真值的脚本当成识别能力。
 - [本轮手机实际Excel](output/trial-v09-phone-results/README.md)：供列、编码、隐私和显示对比，不能还原完整项目。
-- 两份真实候选 `Test_2_CN.pdf`、`Test_1_ENG.pdf` 只供授权本地核查；不是可分发测试包，不能修改原件、打包个人资料或把歧义答案当真值。结构说明见[样本清单](docs/sample-candidates.md)。
+- 真实候选仅供授权本地核查，不是可分发测试包；不能修改外部原件、打包个人资料或把歧义答案当真值。2026-10-22 按使用者要求清除 PC 工作区的测试副本及派生产物，本文不再保留来源文件名或私有样本清单引用。
 
 只发本文给新聊天即可先做产品与架构讨论；实现阶段若要严格对齐，另附 `apps/android` 源码、上述合成包和验收记录。不要转交手机数据库、noBackup密钥、用户原件或整份开发缓存来替代正式交换方案。
 

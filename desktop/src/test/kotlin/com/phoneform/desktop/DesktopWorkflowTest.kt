@@ -93,8 +93,8 @@ class DesktopWorkflowTest {
                 assertEquals(expectedHeader, snapshot.sheets.first().headers.first())
                 val bytes = ByteArrayOutputStream(); val rowCounts = XlsxWriter.write(bytes, snapshot.toXlsxSheets())
                 XlsxWriter.validate(ByteArrayInputStream(bytes.toByteArray()), rowCounts)
-                // Synthetic data only: retain the explicit exported workbook for Microsoft Excel QA.
-                val reviewCopy = Path.of("..", "output", "validation", "uiux-0.2.0", "workflow-$count-${language.name}.xlsx")
+                // Keep plaintext QA copies in JUnit's TemporaryFolder, removed automatically after the test.
+                val reviewCopy = folder.root.toPath().resolve("workflow-$count-${language.name}.xlsx")
                 Files.createDirectories(reviewCopy.parent); Files.write(reviewCopy, bytes.toByteArray())
                 val info = ProjectOperationGate.shared.withLease(projectId) { workspace.assets.put("exports/${language.name}/acceptance.xlsx", ByteArrayInputStream(bytes.toByteArray())) }
                 db.intelligence.saveExportArtifact(ExportArtifact(snapshot.id, ExportArtifactStatus.READY, info.relativePath, info.sha256, info.byteCount))

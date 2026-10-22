@@ -27,6 +27,12 @@ output/*.msi
 *.sqlite-wal
 *.sqlite3
 
-# These old 30-record workbooks were overwritten by a later run; preserve
-# their historical evidence JSON, and use the versioned 0.2.0 copies instead.
-output/validation/workflow-30-*.xlsx
+# Generated plaintext QA workbooks, page images and PDF copies stay local.
+# Structured validation metadata remains eligible for source control.
+/output/validation/**/*.xlsx
+/output/validation/**/*.png
+/output/validation/**/*.pdf
+
+# Questionnaire PDF inputs are local test data, not repository assets.
+/input test/**/*.pdf
+/input-test/**/*.pdf

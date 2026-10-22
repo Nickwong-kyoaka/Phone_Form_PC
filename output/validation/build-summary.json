@@ -246,20 +246,11 @@
     "sha256": "95a827947aa34afe1a1587f62656e41631fe901340861d0ba3ce4b0a5aa0c240"
   },
   "runtimeInventory": "PASS",
-  "uiAcceptance": {
-    "result": "PARTIAL",
-    "evidence": "output/validation/uiux-0.2.0/acceptance.json"
-  },
-  "excelNative": {
-    "result": "PASS",
-    "evidence": "output/validation/uiux-0.2.0/excel-native.json",
-    "workbooks": 3,
-    "recordsEach": 30
-  },
-  "independentXlsx": {
-    "result": "PASS",
-    "evidence": "output/validation/uiux-0.2.0/xlsx-static.json"
-  },
   "releaseAcceptance": "PARTIAL: see 工作阶段.md",
-  "baselineSummary": "output/validation/build-summary-0.1.0.json"
+  "baselineSummary": "output/validation/build-summary-0.1.0.json",
+  "evidenceRemoval": {
+    "date": "2026-10-22",
+    "scope": "Latest main only; historical commits, tags and both MSI Releases preserved.",
+    "reason": "User-requested removal of test questionnaires and derived workbook, screenshot and detailed QA evidence. Build, runtime and automated-test metadata retained; removed evidence is no longer available from latest main."
+  }
 }
