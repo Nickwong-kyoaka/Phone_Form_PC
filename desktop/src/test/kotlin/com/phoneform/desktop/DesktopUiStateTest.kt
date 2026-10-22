@@ -31,6 +31,8 @@ class DesktopUiStateTest {
             val id = project(c, "Layout persistence")
             c.updateUi { it.copy(theme = ThemeMode.DARK, section = WorkspaceSection.REVIEW, sidebarExpanded = false) }
             c.updateProjectUi(id) { it.copy(reviewSearch = "private-layout-search", reviewFilter = "ALL", paneLeft = 265f, paneRight = 395f) }
+            c.updateProjectUi(id) { it.copy(reviewPageIndex = 7, reviewPageSize = 25) }
+            c.updateProjectUi(id) { it.copy(reviewPageIndex = 7) }
             id
         }
         open(root).use { c ->
@@ -42,6 +44,8 @@ class DesktopUiStateTest {
             assertFalse(c.ui.value.sidebarExpanded)
             assertEquals("private-layout-search", c.ui.value.projects.getValue(projectId).reviewSearch)
             assertEquals(395f, c.ui.value.projects.getValue(projectId).paneRight, 0f)
+            // The empty repository clamps persisted pages back to its only page.
+            assertEquals(25, c.ui.value.projects.getValue(projectId).reviewPageSize)
         }
         assertFalse(String(Files.readAllBytes(root.resolve("phoneform.db")), Charsets.ISO_8859_1).contains("private-layout-search"))
         SecureWorkspace.open(root).use { workspace ->
@@ -61,6 +65,17 @@ class DesktopUiStateTest {
             assertEquals(projectId, c.ui.value.projectId)
             assertEquals(projectId, c.state.value.project?.project?.id)
         }
+    }
+
+    @Test fun oldUiPreferencesDefaultToFirstReviewPageAndInvalidPagingIsNormalized() {
+        val old = DesktopUiCodec.decode("""{"projects":{"p":{"reviewSearch":"001","reviewFilter":"ALL"}}}""")
+        assertEquals(0, old.projects.getValue("p").reviewPageIndex)
+        assertEquals(50, old.projects.getValue("p").reviewPageSize)
+        val saved = ProjectUiState(reviewSearch="001",reviewFilter="ALL",reviewPageIndex=3,reviewPageSize=25)
+        val restored = DesktopUiCodec.decode(DesktopUiCodec.encode(DesktopUiState(projects=mapOf("p" to saved))))
+        assertEquals(saved, restored.projects.getValue("p"))
+        assertEquals(0, saved.copy(reviewPageIndex=-5).normalized().reviewPageIndex)
+        assertEquals(50, saved.copy(reviewPageSize=0).normalized().reviewPageSize)
     }
 
     @Test fun failedEncryptedSavePreservesLocationAndInputUntilRetrySucceeds() = runBlocking {

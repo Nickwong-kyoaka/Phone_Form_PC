@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-10-22T07:24:23.8744025Z",
+  "timestamp": "2026-10-22T08:41:48.1718266Z",
   "scope": "File inventory only; not clean-machine acceptance",
   "files": [
     {
@@ -38,5 +38,5 @@
       "sha256": "04fb7c3d1d14e8941c4f85926c54df9e13754ae9c98afe3f8061886e2581e762"
     }
   ],
-  "application": "C:\\Users\\Xuchi_258\\Desktop\\PO project\\questionier\\PC_app\\desktop\\build\\compose\\binaries\\main\\app\\PhoneForm AI PC"
+  "application": "desktop/build/compose/binaries/main/app/PhoneForm AI PC"
 }

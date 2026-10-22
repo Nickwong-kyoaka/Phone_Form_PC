@@ -38,8 +38,8 @@ import kotlinx.coroutines.*
     val binding=CalibrationBinding(initial.id,template.id,RecognitionBindings.pageFingerprints(template.document))
     val session="recognition-profile:${initial.id}"
     val start=CalibrationEnvelope(binding,initial.copy(settings=template.document.questions.map { q->calibrationSettings(q,initial.settings.firstOrNull { it.questionId==q.id }) }))
-    var envelope by encryptedState(controller,session,initial.projectId,"envelope",start,
-        {editorJson.fromJson(it,CalibrationEnvelope::class.java)},{editorJson.toJson(it)})
+    val recovery=recoverableEncryptedState(controller,session,initial.projectId,"envelope",start,::decodeCalibrationRecovery,{editorJson.toJson(it)})
+    var envelope by recovery
     val state by controller.state.collectAsState();val ui by controller.ui.collectAsState()
     val presentation=ui.projects[initial.projectId] ?: ProjectUiState()
     val bound=calibrationEnvelopeMatches(envelope,binding)
@@ -75,12 +75,17 @@ import kotlinx.coroutines.*
     val currentFingerprint=editorJson.toJson(envelope.draft.settings)
     val previewCurrent=preview!=null && previewFingerprint==currentFingerprint && previewGroupId==groupId
     fun cleanupPublished() {controller.perform {
+        recovery.requireReady()
         require(envelope.publishedProfileId!=null)
         // Publication already committed. A cleanup retry must never save the removed draft again.
         clearEditor(session);close()
     }}
-    fun save() { if(bound && !published)controller.perform { val saved=saveRecognitionDraft(envelope.draft);envelope=envelope.copy(draft=saved,undo=emptyList(),redo=emptyList());onSaved(saved);flushEdits();statusMessage=tr(language,"設定草稿已保存，尚未確認套用。","设置草稿已保存，尚未确认应用。","Settings draft saved. Confirm it before use.") } }
-    RegisterSaveAction((bound || published) && !state.busy) { if(published)cleanupPublished()else save() }
+    fun save() { if(bound && !published)controller.perform { recovery.requireReady();val saved=saveRecognitionDraft(envelope.draft);envelope=envelope.copy(draft=saved,undo=emptyList(),redo=emptyList());onSaved(saved);flushEdits();statusMessage=tr(language,"設定草稿已保存，尚未確認套用。","设置草稿已保存，尚未确认应用。","Settings draft saved. Confirm it before use.") } }
+    RegisterSaveAction(recovery.ready && (bound || published) && !state.busy) { if(published)cleanupPublished()else save() }
+    if(!recovery.ready) {
+        RecoveryLoadProblem(recovery,language){controller.perform {clearEditor(session);recovery.resetAfterDiscard(start)}}
+        return
+    }
     Column(Modifier.fillMaxSize()) {
         WorkspaceToolbar(tr(language,"辨識設定 · 草稿 r${envelope.draft.revision}","识别设置 · 草稿 r${envelope.draft.revision}","Recognition settings · draft r${envelope.draft.revision}"),
             tr(language,"只調整辨識範圍，不改題目、選項代碼或已保存人工答案。","仅调整识别区域，不改变题目、选项代码或已保存人工答案。","Adjust recognition regions without changing question codes or saved human answers.")) {
@@ -162,6 +167,7 @@ import kotlinx.coroutines.*
                 Text(tr(language,"關閉會保留加密編輯草稿。","关闭会保留加密编辑草稿。","Closing retains the encrypted editor draft."),Modifier.weight(1f),style=MaterialTheme.typography.bodySmall)
                 OutlinedButton(onClick=close,enabled=!state.busy){Text(tr(language,"關閉","关闭","Close"))}
                 Button(onClick={if(published)cleanupPublished()else controller.perform {
+                    recovery.requireReady()
                     val saved=saveRecognitionDraft(envelope.draft);envelope=envelope.copy(draft=saved,undo=emptyList(),redo=emptyList());onSaved(saved);flushEdits()
                     val confirmed=confirmSavedRecognitionDraft(saved)
                     envelope=envelope.copy(publishedProfileId=confirmed.id)

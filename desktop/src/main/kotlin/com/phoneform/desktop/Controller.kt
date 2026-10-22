@@ -24,11 +24,13 @@ data class AppSnapshot(
     val settings: AppSettings = AppSettings(), val projects: List<ProjectListSummary> = emptyList(),
     val project: ProjectDetails? = null, val templateDraft: TemplateDraft? = null,
     val template: FormSchemaVersion? = null, val drafts: List<SubmissionDraft> = emptyList(),
-    val submissions: List<Submission> = emptyList(), val reviews: List<ReviewListSummary> = emptyList(),
-    val exports: List<ExportSnapshot> = emptyList(), val policies: List<OutputFieldPolicy> = emptyList(),
+    /** Only submissions referenced by open collection drafts, never the project's entire history. */
+    val submissions: List<Submission> = emptyList(), val collectionLocked: Boolean = false,
+    val exports: List<ExportListSummary> = emptyList(), val policies: List<OutputFieldPolicy> = emptyList(),
     val busy: Boolean = false, val error: String? = null, val notice: String? = null,
     val worker: String = "", val paused: Boolean = false,
     val editorSaveState: EditorSaveState = EditorSaveState.SAVED,
+    val dataRevision: Long = 0, val taskTotal: Int = 0, val taskStatusCounts: Map<String,Int> = emptyMap(),
 )
 
 class Controller(val workspace: SecureWorkspace, val modelDir: Path, startWorkers: Boolean = true) : AutoCloseable {
@@ -43,6 +45,8 @@ class Controller(val workspace: SecureWorkspace, val modelDir: Path, startWorker
     val ui: StateFlow<DesktopUiState> = mutableUi.asStateFlow()
     private val mutableTasks = MutableStateFlow<List<UiTaskSummary>>(emptyList())
     val tasks: StateFlow<List<UiTaskSummary>> = mutableTasks.asStateFlow()
+    private val reviewLoader = ReviewPageLoader(scope, { id, query -> repositories.intelligence.queryReviewPage(id, query) }, ::errorCode)
+    val reviewPage: StateFlow<ReviewListState> = reviewLoader.state
     private val taskRequests = Channel<List<ProjectListSummary>>(Channel.CONFLATED)
     private val uiPreferences = DesktopUiPreferencesStore(workspace.database)
     private val uiSaveLock = Mutex()
@@ -105,17 +109,24 @@ class Controller(val workspace: SecureWorkspace, val modelDir: Path, startWorker
         if (closing) return
         mutableUi.update { old -> change(old).let { it.copy(projectId = selectedProjectId, projects = it.projects.mapValues { entry -> entry.value.normalized() }) } }
         scheduleUiSave()
+        requestReviewPage()
     }
     fun updateProjectUi(projectId: String, change: (ProjectUiState) -> ProjectUiState) {
         if (closing || state.value.projects.none { it.project.id == projectId }) return
-        updateUi { it.copy(projects = it.projects + (projectId to change(it.projects[projectId] ?: ProjectUiState()).normalized())) }
+        updateUi {
+            val before = it.projects[projectId] ?: ProjectUiState()
+            var after = change(before).normalized()
+            if (before.reviewSearch != after.reviewSearch || before.reviewFilter != after.reviewFilter || before.reviewPageSize != after.reviewPageSize)
+                after = after.copy(reviewPageIndex = 0)
+            it.copy(projects = it.projects + (projectId to after))
+        }
     }
     fun navigate(section: WorkspaceSection): Job = scope.launch {
         try {
             initialized.await()
             actions.withLock {
                 if (closing) return@withLock
-                flushEdits(); mutableUi.update { it.copy(section = section) }; scheduleUiSave()
+                flushEdits(); mutableUi.update { it.copy(section = section) }; scheduleUiSave(); requestReviewPage()
             }
         } catch (failure: CancellationException) { throw failure }
         catch (failure: Exception) { mutable.update { it.copy(error = errorCode(failure)) } }
@@ -134,27 +145,23 @@ class Controller(val workspace: SecureWorkspace, val modelDir: Path, startWorker
 
     private suspend fun refreshTasks(projects: List<ProjectListSummary>) {
         val names = projects.associate { it.project.id to it.project.name }
-        val result = mutableListOf<UiTaskSummary>()
-        repositories.imageProcessing.observeJobs().first().filter { it.owner.projectId in names && it.status != PageProcessingStatus.SUPERSEDED }.forEach { job ->
-            result += UiTaskSummary(job.id, job.owner.projectId, names.getValue(job.owner.projectId), "IMAGE", job.status.name,
-                pageNumber = if (job.owner.kind == PageProcessingOwnerKind.TEMPLATE_DRAFT) job.page.position + 1 else null,
-                error = job.error, retrySupported = job.status in listOf(PageProcessingStatus.FAILED, PageProcessingStatus.PAUSED))
-        }
-        for (project in projects) {
-            val id = project.project.id
-            val submissions = repositories.submissions.observeSubmissions(id).first().filterNot { it.discarded }.associateBy { it.id }
-            repositories.submissions.observeJobs(id).first().filter { job -> job.status != PreparationJobStatus.SUPERSEDED && submissions[job.submissionId]?.currentRevisionId == job.submissionRevisionId }.forEach { job ->
-                result += UiTaskSummary(job.id, id, project.project.name, "PREPARATION", job.status.name,
-                    submissionNumber = submissions[job.submissionId]?.number, error = job.error,
-                    retrySupported = job.status in listOf(PreparationJobStatus.FAILED, PreparationJobStatus.PAUSED))
-            }
-            repositories.intelligence.observeRecognitionJobs(id).first().filter { job -> job.status != RecognitionJobStatus.SUPERSEDED && submissions[job.submissionId]?.currentRevisionId == job.submissionRevisionId }.forEach { job ->
-                result += UiTaskSummary(job.id, id, project.project.name, "RECOGNITION", job.status.name,
-                    submissionNumber = submissions[job.submissionId]?.number, error = job.error,
-                    retrySupported = job.status in listOf(RecognitionJobStatus.FAILED, RecognitionJobStatus.PAUSED))
-            }
-        }
-        mutableTasks.value = result
+        val page = repositories.taskSummaries(limit = 200)
+        mutableTasks.value = page.items.map { task -> UiTaskSummary(task.id, task.projectId, names[task.projectId] ?: task.projectId,
+            task.phase.name, task.status, task.submissionNumber, task.pageNumber, task.error, task.retrySupported) }
+        mutable.update { it.copy(taskTotal = page.total, taskStatusCounts = page.statusCounts) }
+    }
+    private fun requestReviewPage(force: Boolean = false) {
+        val id = selectedProjectId.takeIf { mutableUi.value.section == WorkspaceSection.REVIEW }
+        val query = (id?.let { mutableUi.value.projects[it] } ?: ProjectUiState()).reviewQuery()
+        val previous = reviewPage.value
+        val searchChanged = previous.projectId == id && previous.query.search != query.search
+        reviewLoader.request(id, query, state.value.dataRevision, if (searchChanged) 300 else 0, force)
+    }
+    fun retryReviewPage() = requestReviewPage(force = true)
+    fun changeReviewPage(pageIndex: Int) {
+        val id = selectedProjectId ?: return
+        updateProjectUi(id) { it.copy(reviewPageIndex = pageIndex.coerceAtLeast(0),
+            reviewSubmissionId = if (it.reviewWorkspace) it.reviewSubmissionId else null) }
     }
     fun retryTask(id: String) = perform {
         val task = tasks.value.firstOrNull { it.id == id && it.retrySupported } ?: error("TASK_RETRY_UNAVAILABLE")
@@ -178,8 +185,14 @@ class Controller(val workspace: SecureWorkspace, val modelDir: Path, startWorker
                 val valid = restored.copy(projectId = restored.projectId?.takeIf { it in ids }, projects = restored.projects.filterKeys { it in ids })
                 mutableUi.value = valid; selectedProjectId = valid.projectId
                 initialized.complete(Unit)
-                refresh()
-                workspace.database.changes.collect { refresh() }
+                try { refresh() }
+                catch (failure: CancellationException) { throw failure }
+                catch (failure: Exception) { mutable.update { it.copy(error = errorCode(failure)) } }
+                workspace.database.changes.debounce(125).collect {
+                    try { refresh() }
+                    catch (failure: CancellationException) { throw failure }
+                    catch (failure: Exception) { mutable.update { it.copy(error = errorCode(failure)) } }
+                }
             } catch (failure: Throwable) {
                 initialized.completeExceptionally(failure)
                 if (failure is CancellationException) throw failure
@@ -188,12 +201,25 @@ class Controller(val workspace: SecureWorkspace, val modelDir: Path, startWorker
         }
         if (startWorkers) activeWorker = scope.launch { initialized.await(); workerLoop() }
         scope.launch {
+            reviewPage.collect { result ->
+                val page = result.page ?: return@collect
+                val id = result.projectId ?: return@collect
+                if (!result.loading && !result.stale && result.error == null && selectedProjectId == id &&
+                    mutableUi.value.projects[id]?.reviewQuery() == result.query && page.query.pageIndex != result.query.pageIndex) {
+                    mutableUi.update { current -> current.copy(projects = current.projects + (id to
+                        (current.projects[id] ?: ProjectUiState()).copy(reviewPageIndex = page.query.pageIndex))) }
+                    scheduleUiSave()
+                    requestReviewPage()
+                }
+            }
+        }
+        scope.launch {
             try { initialized.await() }
             catch (failure: CancellationException) { throw failure }
             catch (failure: Exception) { mutable.update { it.copy(error = errorCode(failure)) }; return@launch }
             for (requested in taskRequests) {
-                // Editor/layout writes can arrive in bursts. Read full job payloads once per burst,
-                // independently of foreground navigation, and retain only the newest project list.
+                // Editor/layout writes can arrive in bursts. Read the bounded task projection once
+                // per burst, independently of navigation, and retain only the newest project list.
                 delay(750)
                 var latest = requested
                 while (true) latest = taskRequests.tryReceive().getOrNull() ?: break
@@ -237,9 +263,11 @@ class Controller(val workspace: SecureWorkspace, val modelDir: Path, startWorker
         val td = id?.let { repositories.templates.observeDraft(it).first() }
         val template = id?.let { repositories.templates.observeConfirmed(it).first() }
         val drafts = id?.let { repositories.submissions.observeDrafts(it).first() }.orEmpty()
-        val submissions = id?.let { repositories.submissions.observeSubmissions(it).first() }.orEmpty()
-        val reviews = id?.let { repositories.intelligence.observeReviewSummaries(it).first() }.orEmpty()
-        val exports = id?.let { repositories.intelligence.observeExports(it).first() }.orEmpty()
+        val submissions = drafts.map { it.submissionId }.distinct().mapNotNull { repositories.submissions.getSubmission(it) }
+        val collectionLocked = id?.let { repositories.submissions.observeCollectionState(it).first().locked } ?: false
+        val activeReviewId = id?.let { uiAtStart.projects[it]?.reviewSubmissionId }
+        val activeReviewExists = activeReviewId?.let { repositories.intelligence.getReviewSummary(it) != null } ?: false
+        val exports = id?.let { repositories.intelligence.observeExportSummaries(it).first() }.orEmpty()
         val policies = id?.let { repositories.intelligence.observePolicies(it).first() }.orEmpty()
         if (id != null) {
             (td?.pages.orEmpty() + template?.document?.pages.orEmpty() + drafts.flatMap { it.pages.map(PageRevision::image) })
@@ -247,7 +275,8 @@ class Controller(val workspace: SecureWorkspace, val modelDir: Path, startWorker
         }
         if (id == selectedProjectId) mutable.update { it.copy(settings = settings, projects = summaries,
             project = project, templateDraft = td, template = template, drafts = drafts,
-            submissions = submissions, reviews = reviews, exports = exports, policies = policies) }
+            submissions = submissions, collectionLocked = collectionLocked, exports = exports, policies = policies,
+            dataRevision = workspace.database.changes.value) }
         if (id == selectedProjectId) {
             val ids = summaries.map { it.project.id }.toSet()
             if (id != null && project == null) selectedProjectId = null
@@ -266,7 +295,7 @@ class Controller(val workspace: SecureWorkspace, val modelDir: Path, startWorker
                         templateQuestionId = old.templateQuestionId?.takeIf { key -> questions.any { it.id == key } },
                         collectionDraftId = old.collectionDraftId?.takeIf { key -> drafts.any { it.id == key } },
                         collectionPageId = old.collectionPageId?.takeIf { it in slots },
-                        reviewSubmissionId = old.reviewSubmissionId?.takeIf { key -> reviews.any { it.submissionId == key } },
+                        reviewSubmissionId = old.reviewSubmissionId?.takeIf { key -> key != activeReviewId || activeReviewExists },
                         reviewTargetKey = old.reviewTargetKey?.takeIf { it in targets })
                     next = next.copy(projects = next.projects + (id to valid))
                 }
@@ -275,6 +304,7 @@ class Controller(val workspace: SecureWorkspace, val modelDir: Path, startWorker
             if (mutableUi.value != previous) scheduleUiSave()
         }
         taskRequests.trySend(summaries)
+        requestReviewPage()
     }
     suspend fun createProject(name: String, expected: Int?, language: QuestionnaireLanguage,
                               numbering: NumberingStrategy, output: OutputHeaderLanguage,
@@ -303,6 +333,7 @@ class Controller(val workspace: SecureWorkspace, val modelDir: Path, startWorker
     suspend fun confirmTemplate() {
         templateCommit?.second?.invoke()
         val draft = templateDraft()
+        requireTemplateRecoveryClean(draft)
         repositories.templates.confirmDraft(draft.projectId, draft.id, draft.revision)
     }
     suspend fun loadRecognitionDraft(): RecognitionProfileDraft {
@@ -363,6 +394,14 @@ class Controller(val workspace: SecureWorkspace, val modelDir: Path, startWorker
         val profile = requireNotNull(repositories.intelligence.getRecognitionProfile(review.template.id)) { "RECOGNITION_SETTINGS_REQUIRED" }
         return repositories.intelligence.rerunRecognition(submissionId, review.revision.id, profile.id,
             review.job?.id, newId())
+    }
+    suspend fun rerunRecognition(target: RecognitionRerunTarget): RecognitionJob {
+        val id = requireNotNull(selectedProjectId)
+        val project = requireNotNull(repositories.projects.getProject(id)) { "PROJECT_UNAVAILABLE" }
+        require(project.project.templateVersionId == target.templateVersionId) { "RECOGNITION_INPUT_CHANGED" }
+        val profile = requireNotNull(repositories.intelligence.getRecognitionProfile(target.templateVersionId)) { "RECOGNITION_SETTINGS_REQUIRED" }
+        return repositories.intelligence.rerunRecognition(target.submissionId, target.submissionRevisionId, profile.id,
+            target.currentJobId, newId())
     }
     suspend fun discardTemplate() {
         val draft = requireNotNull(state.value.templateDraft)

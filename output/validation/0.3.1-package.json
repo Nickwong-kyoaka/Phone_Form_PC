@@ -1,0 +1,70 @@
+{
+  "version": "0.3.1-dev",
+  "checkedAt": "2026-10-22T16:41:49.8571379+08:00",
+  "scope": "Self-contained distribution inventory, application module jar check and bundled Java execution; no clean-machine installation or upgrade claim",
+  "bundledJavaExecuted": true,
+  "javaVersion": "openjdk version \"21.0.12.1\" 2026-08-18 LTS\r\nOpenJDK Runtime Environment Temurin-21.0.12.1+1 (build 21.0.12.1+1-LTS)\r\nOpenJDK 64-Bit Server VM Temurin-21.0.12.1+1 (build 21.0.12.1+1-LTS, mixed mode)",
+  "resourceHashesMatch": true,
+  "applicationJarsChecked": 6,
+  "files": [
+    {
+      "path": "models/eng.traineddata",
+      "bytes": 15400601,
+      "sha256": "8280aed0782fe27257a68ea10fe7ef324ca0f8d85bd2fd145d1c2b560bcb66ba"
+    },
+    {
+      "path": "models/chi_sim.traineddata",
+      "bytes": 13077423,
+      "sha256": "4fef2d1306c8e87616d4d3e4c6c67faf5d44be3342290cf8f2f0f6e3aa7e735b"
+    },
+    {
+      "path": "models/chi_tra.traineddata",
+      "bytes": 12985735,
+      "sha256": "1aa60488574cafa69486d919284f079ca9b68fcc7f6ad8dc1ff1b318dfd97028"
+    },
+    {
+      "path": "models/LICENSE",
+      "bytes": 10173,
+      "sha256": "a6cba85bc92e0cff7a450b1d873c0eaa2e9fc96bf472df0247a26bec77bf3ff9"
+    },
+    {
+      "path": "opencv/opencv-4120.jar",
+      "bytes": 826868,
+      "sha256": "e5e9f0248daecd6b29eb6947d256ebaa2918e3fd555a01cf182ff3e811743727"
+    },
+    {
+      "path": "opencv/opencv_java4120.dll",
+      "bytes": 53010432,
+      "sha256": "aca5d9a9bc8067434d793402269a18aa18a4e033c96d44707686d30ff162abb9"
+    },
+    {
+      "path": "THIRD_PARTY_NOTICES.txt",
+      "bytes": 2306,
+      "sha256": "04fb7c3d1d14e8941c4f85926c54df9e13754ae9c98afe3f8061886e2581e762"
+    }
+  ],
+  "previousInstallers": [
+    {
+      "version": "0.1.0-dev",
+      "bytes": 159695075,
+      "sha256": "e00ef974557c3d7520b6530b97f367dc9ab41aa65496b165d5e4fee2aa38c9ea",
+      "unchanged": true
+    },
+    {
+      "version": "0.2.0-dev",
+      "bytes": 160411871,
+      "sha256": "95a827947aa34afe1a1587f62656e41631fe901340861d0ba3ce4b0a5aa0c240",
+      "unchanged": true
+    },
+    {
+      "version": "0.3.0-dev",
+      "bytes": 161005795,
+      "sha256": "f590db1da68a5c804efbd74858423c18bea6ea8f126c2864bc622b88ce7368c6",
+      "unchanged": true
+    }
+  ],
+  "installerVersion": "0.3.1",
+  "upgradeUuid": "ed691b8d-e474-4c05-ac56-d0ce19f69f28",
+  "cleanMachineInstallVerified": false,
+  "nativeExcelOpened": false
+}

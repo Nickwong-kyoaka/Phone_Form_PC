@@ -41,18 +41,17 @@ import java.io.File
     var suggestions by remember { mutableStateOf<TemplateAnalysisRun?>(null) }
     var recognitionSettings by remember(projectId) { mutableStateOf(false) }
     var questionDirty by remember(draft?.id){mutableStateOf(false)}
-    var pendingMatrices by remember(draft?.id){mutableStateOf<List<String>>(emptyList())}
+    var pendingRecoveries by remember(draft?.id){mutableStateOf<List<TemplateRecoveryIssue>>(emptyList())}
+    val pendingMatrices=pendingRecoveries.filter {it.matrix}.map {it.pageId}
+    var recoveryReadFailed by remember(draft?.id){mutableStateOf(false)}
+    var recoveryRetry by remember(draft?.id){mutableIntStateOf(0)}
     var matrixRecoveryChecked by remember(draft?.id){mutableStateOf(draft==null)}
-    LaunchedEffect(draft?.id,draft?.revision,matrix) {
+    LaunchedEffect(draft?.id,draft?.revision,matrix,state.busy,recoveryRetry) {
         matrixRecoveryChecked=false
-        pendingMatrices=draft?.pages.orEmpty().mapNotNull {p->
-            val raw=controller.loadEditorField("matrix:${draft?.id}:${p.id}","envelope")
-            if(raw==null)null else {
-                val recovered=runCatching {editorJson.fromJson(raw,MatrixEditEnvelope::class.java)}.getOrNull()
-                if(recovered==null || listOf(recovered.rows,recovered.columns,recovered.codes,recovered.labels,recovered.rowWeights,recovered.columnWeights).any {it.isNotBlank()} || recovered.style!=MarkStyle.MANUAL_ONLY)p.id else null
-            }
-        }
-        matrixRecoveryChecked=true
+        recoveryReadFailed=false
+        try {pendingRecoveries=draft?.let {controller.templateRecoveryIssues(it)}.orEmpty();matrixRecoveryChecked=true}
+        catch(failure:CancellationException){throw failure}
+        catch(_:Exception){recoveryReadFailed=true}
     }
     LaunchedEffect(draft?.id, state.busy) { suggestions = draft?.let { controller.repositories.intelligence.observeAnalysis(it.id).first() } }
     LaunchedEffect(editing?.id,page?.id) { if(editing != null) region = editing.region }
@@ -75,7 +74,7 @@ import java.io.File
         ) {
             if (draft == null) {
                 OutlinedButton(onClick={recognitionSettings=true},enabled=state.template!=null && !state.busy){Text(tr(language,"辨識設定","识别设置","Recognition settings"))}
-                Button(onClick = { controller.perform { templateDraft() } }, enabled = !state.busy && state.submissions.none { it.currentRevisionId != null } && state.drafts.isEmpty()) { Text(tr(language,"建立／修改範本","建立／修改模板","Create / edit template")) }
+                Button(onClick = { controller.perform { templateDraft() } }, enabled = !state.busy && !state.collectionLocked && state.drafts.isEmpty()) { Text(tr(language,"建立／修改範本","建立／修改模板","Create / edit template")) }
             }
             else {
                 OutlinedButton(onClick = { chooseFile(language)?.let { importFile = it } }, enabled = !state.busy && !questionDirty) { Text(tr(language,"加入頁面","添加页面","Add pages")) }
@@ -89,6 +88,14 @@ import java.io.File
             }
         }
         if(questionDirty)Text(tr(language,"目前題目仍有編輯，請保存後再切換題目或頁面。","当前题目仍有编辑，请保存后再切换题目或页面。","This question has unsaved edits. Save it before changing questions or pages."),Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.secondaryContainer).padding(10.dp),style=MaterialTheme.typography.bodySmall)
+        if(recoveryReadFailed)Row(Modifier.fillMaxWidth().padding(10.dp),verticalAlignment=Alignment.CenterVertically) {
+            Text(tr(language,"無法核對範本恢復資料，原輸入仍保留。請重試後才確認。","无法核对模板恢复数据，原输入仍保留。请重试后再确认。","Template recovery could not be checked. Its input is retained. Retry before confirming."),Modifier.weight(1f),color=MaterialTheme.colorScheme.error)
+            TextButton(onClick={recoveryRetry++}){Text(tr(language,"重試","重试","Retry"))}
+        }
+        pendingRecoveries.firstOrNull {!it.matrix}?.let {pending->Row(Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.secondaryContainer).padding(10.dp),verticalAlignment=Alignment.CenterVertically) {
+            Text(tr(language,"另有保留的題目／整組輸入尚未套用。切回「編輯」完成或明確放棄後再確認。","另有保留的题目／整组输入尚未应用。切回“编辑”完成或明确放弃后再确认。","Retained question/group input is unapplied. Open Edit to complete or explicitly discard it before confirming."),Modifier.weight(1f),style=MaterialTheme.typography.bodySmall)
+            TextButton(onClick={controller.updateProjectUi(projectId){it.copy(templatePageId=pending.pageId,templateQuestionId=pending.questionId,templateInspectorTab=1)}},enabled=!state.busy){Text(tr(language,"定位編輯","定位编辑","Locate edit"))}
+        }}
         if(pendingMatrices.isNotEmpty())Row(Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.secondaryContainer).padding(10.dp),verticalAlignment=Alignment.CenterVertically) {
             Text(tr(language,"保留的矩陣草稿尚未生成，請先完成或明確放棄。","保留的矩阵草稿尚未生成，请先完成或明确放弃。","A retained matrix draft has not been generated. Complete or explicitly discard it first."),Modifier.weight(1f),style=MaterialTheme.typography.bodySmall)
             TextButton(onClick={controller.perform {
@@ -228,45 +235,54 @@ import java.io.File
     val fingerprint=PageProcessingFingerprint.of(page)
     val session="question:${draft.id}:${question.id}"
     val initial=QuestionEditEnvelope(draft.id,fingerprint,question,question)
-    var envelope by encryptedState(controller,session,draft.projectId,"envelope",initial,
-        {editorJson.fromJson(it,QuestionEditEnvelope::class.java)},{editorJson.toJson(it)})
+    val recovery=recoverableEncryptedState(controller,session,draft.projectId,"envelope",initial,::decodeQuestionRecovery,{editorJson.toJson(it)})
+    var envelope by recovery
     val bound=questionEnvelopeMatches(envelope,draft.id,fingerprint,question)
     val value=envelope.value
     var group by remember(question.id){mutableStateOf(false)}
     var pendingGroup by remember(session){mutableStateOf(false)}
     var groupRecoveryChecked by remember(session){mutableStateOf(false)}
-    LaunchedEffect(session,group) {
+    var groupRecoveryFailed by remember(session){mutableStateOf(false)}
+    var groupRecoveryRetry by remember(session){mutableIntStateOf(0)}
+    LaunchedEffect(session,group,groupRecoveryRetry) {
         groupRecoveryChecked=false
-        val groupId=question.matrixId ?: question.id
-        pendingGroup=controller.loadEditorField("initial-calibration:${draft.id}:$groupId","envelope")?.let {raw->
-            val recovered=runCatching {editorJson.fromJson(raw,CalibrationEnvelope::class.java)}.getOrNull()
-            val originalQuestions=draft.matrices.firstOrNull {it.id==question.matrixId}?.questionIds?.mapNotNull {id->draft.questions.firstOrNull {it.id==id}} ?: listOf(question)
-            recovered==null || recovered.draft.settings!=originalQuestions.map {calibrationSettings(it)} || recovered.grids.isNotEmpty()
-        } ?: false
-        groupRecoveryChecked=true
+        groupRecoveryFailed=false
+        try {
+            val groupId=question.matrixId ?: question.id
+            pendingGroup=controller.loadEditorField("initial-calibration:${draft.id}:$groupId","envelope")?.let {raw->
+                val originalQuestions=draft.matrices.firstOrNull {it.id==question.matrixId}?.questionIds?.mapNotNull {id->draft.questions.firstOrNull {it.id==id}} ?: listOf(question)
+                runCatching {calibrationRecoveryHasChanges(decodeCalibrationRecovery(raw),originalQuestions,draft.matrices.firstOrNull {it.id==question.matrixId})}.getOrDefault(true)
+            } ?: false
+            groupRecoveryChecked=true
+        }catch(failure:CancellationException){throw failure}catch(_:Exception){groupRecoveryFailed=true}
     }
     fun edit(change:(QuestionDefinition)->QuestionDefinition){envelope=envelope.copy(value=change(envelope.value))}
-    val currentValue by rememberUpdatedState(value)
     val currentSave by rememberUpdatedState(onSave)
-    val currentBound by rememberUpdatedState(bound)
     val commit:suspend()->Unit = {
-        require(currentBound){"STALE_EDIT_RELOAD"}
+        val q=recovery.questionForCommit(draft.id,fingerprint,question)
         require(groupRecoveryChecked && !pendingGroup && !group){"EDITOR_RECOVERY_PENDING"}
-        val q=currentValue
         val choice=q.type in listOf(QuestionType.SINGLE_CHOICE,QuestionType.MULTIPLE_CHOICE)
         val normalized=q.copy(options=if(choice)q.options else emptyList())
         val settings=calibrationSettings(normalized,q.recognition)
         currentSave(normalized.copy(recognition=if(q.type==QuestionType.TEXT)settings.copy(enabled=false,style=MarkStyle.MANUAL_ONLY)else settings))
     }
     val currentCommit by rememberUpdatedState(commit)
-    SideEffect {onDirtyChanged(!bound || value!=question || pendingGroup || !groupRecoveryChecked)}
+    SideEffect {onDirtyChanged(!recovery.ready || !bound || value!=question || pendingGroup || !groupRecoveryChecked)}
     DisposableEffect(session) {
         controller.registerTemplateCommit(session){currentCommit()}
         onDispose {controller.unregisterTemplateCommit(session);onDirtyChanged(false)}
     }
-    RegisterSaveAction(bound){controller.perform {currentCommit()}}
+    RegisterSaveAction(recovery.ready && bound){controller.perform {currentCommit()}}
+    if(!recovery.ready) {
+        RecoveryLoadProblem(recovery,language){controller.perform {clearEditor(session);recovery.resetAfterDiscard(initial)}}
+        return
+    }
     Column(Modifier.fillMaxSize(),verticalArrangement=Arrangement.spacedBy(10.dp)) {
         Text(tr(language,"編輯題目","编辑题目","Edit question"),style=MaterialTheme.typography.titleSmall)
+        if(groupRecoveryFailed)Column {
+            Text(tr(language,"整組恢復資料尚未讀取，保存與確認已暫停。","整组恢复数据尚未读取，保存与确认已暂停。","Group recovery could not be checked. Saving and confirmation are blocked."),color=MaterialTheme.colorScheme.error)
+            TextButton(onClick={groupRecoveryRetry++}){Text(tr(language,"重試讀取","重试读取","Retry loading"))}
+        }
         if(pendingGroup)Column {
             Text(tr(language,"本組仍有保留的未套用編輯，請開啟整組工具完成或明確放棄後再保存／確認。","本组仍有保留的未应用编辑，请打开整组工具完成或明确放弃后再保存／确认。","This group has retained, unapplied edits. Open the group editor to complete or explicitly discard them before saving or confirming."),color=MaterialTheme.colorScheme.error,style=MaterialTheme.typography.bodySmall)
             TextButton(onClick={controller.perform {clearEditor("initial-calibration:${draft.id}:${question.matrixId ?: question.id}");pendingGroup=false}}){Text(tr(language,"放棄保留的本組編輯","放弃保留的本组编辑","Discard retained group edits"))}
@@ -318,7 +334,14 @@ import java.io.File
     val page=draft.pages.first {it.id==pageId}
     val session="matrix:${draft.id}:$pageId"
     val initial=MatrixEditEnvelope(draft.id,PageProcessingFingerprint.of(page),region)
-    var value by encryptedState(controller,session,draft.projectId,"envelope",initial,{editorJson.fromJson(it,MatrixEditEnvelope::class.java)},{editorJson.toJson(it)})
+    val recovery=recoverableEncryptedState(controller,session,draft.projectId,"envelope",initial,::decodeMatrixRecovery,{editorJson.toJson(it)})
+    var value by recovery
+    if(!recovery.ready) {
+        AppDialog(tr(language,"建立矩陣","建立矩阵","Create matrix"),close,width=720.dp,height=760.dp) {
+            RecoveryLoadProblem(recovery,language){controller.perform {clearEditor(session);recovery.resetAfterDiscard(initial)}}
+        }
+        return
+    }
     val bound=value.draftId==draft.id && value.pageFingerprint==PageProcessingFingerprint.of(page)
     fun weights(text:String,count:Int):List<Float>? {
         if(count==0)return null
@@ -358,6 +381,7 @@ import java.io.File
                 TextButton(onClick={controller.perform {clearEditor(session);value=initial}}){Text(tr(language,"放棄本次草稿","放弃本次草稿","Discard draft"))}
                 TextButton(onClick=close){Text(tr(language,"返回","返回","Back"))}
                 Button(enabled=valid,onClick={
+                    recovery.requireReady()
                     val matrixId=newId();val width=value.region.right-value.region.left;val height=value.region.bottom-value.region.top
                     val questions=rowTitles.mapIndexed {r,title->
                         val row=NormalizedRect(value.region.left,value.region.top+height*rb!![r],value.region.right,value.region.top+height*rb[r+1])

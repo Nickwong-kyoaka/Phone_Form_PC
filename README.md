@@ -10,7 +10,8 @@ Windows 11 x64 独立离线问卷处理程序 / Standalone offline questionnaire
 
 | Version | Description | Release |
 |---|---|---|
-| **[0.3.0-dev](docs/releases/0.3.0-dev.md)** | 当前开发源码；辨识设置版本、整组校准及分类标记辨识 / Current development source; versioned recognition settings, group calibration and separate mark detectors | 本机 MSI；本轮不新增 Release / Local MSI; no new Release |
+| **[0.3.1-dev](docs/releases/0.3.1-dev.md)** | 当前开发源码；SQL 分页搜索、轻量摘要及编辑恢复保护 / Current source; SQL paging/search, lightweight summaries and editor-recovery protection | 本机 MSI；本轮不新增 Release / Local MSI; no new Release |
+| [0.3.0-dev](docs/releases/0.3.0-dev.md) | 辨识设置版本、整组校准及分类标记辨识 / Versioned recognition, group calibration and separate mark detectors | 前版本机 MSI 保留 / Earlier local MSI preserved |
 | 0.2.0-dev | 蓝白桌面布局归档 / Desktop redesign archive | [Windows x64 MSI](https://github.com/Nickwong-kyoaka/Phone_Form_PC/releases/tag/v0.2.0-dev) |
 | 0.1.0-dev | 原始安装包归档 / Original installer archive | [Windows x64 MSI](https://github.com/Nickwong-kyoaka/Phone_Form_PC/releases/tag/v0.1.0-dev) |
 
@@ -30,6 +31,7 @@ These are internal evaluation builds. The 0.1 tag contains archival metadata and
 - 本地加密数据库和文件、Windows CurrentUser DPAPI 密钥保护、加密编辑恢复、版本与人工答案保护。
 - 整组选项／矩阵分格、拖动微调、印刷数字核心确认、独立设置版本与预览；不要求额外空白问卷参考。
 - 方框勾叉与圈印刷数字分别分析；歧义转人工，候选保存来源版本，采用仍须明确操作。中文手写与自由文字继续人工输入。
+- 数据库分页搜索、固定修订重跑、按需读取匯出历史；恢复载入失败可重试，未套用草稿不能绕过确认。
 
 - Traditional Chinese, Simplified Chinese and English, with independent interface, questionnaire and Excel-heading languages; questions and answers are not automatically translated.
 - One-questionnaire-at-a-time PDF/JPG/PNG import, fixed page slots, template editing, local OCR/OMR, human review, four-sheet Excel export and historical snapshots.
@@ -37,6 +39,7 @@ These are internal evaluation builds. The 0.1 tag contains archival metadata and
 - Encrypted local storage, Windows CurrentUser DPAPI key protection, encrypted edit recovery, revision checks and human-answer protection.
 - Group and matrix partitioning, draggable calibration, printed-core confirmation, immutable settings versions and preview, without an additional blank-reference document.
 - Separate checkbox and circled-digit analysis; ambiguity requires human entry. Candidate adoption is explicit and records its actual source version. Chinese handwriting and free text remain manual.
+- SQL paging/search, revision-pinned reruns and on-demand export snapshots; failed recovery can be retried, and confirmation cannot bypass pending editor drafts.
 
 默认工作区为 `%LOCALAPPDATA%\PhoneFormAI-PC`。`PHONEFORM_DATA_DIR` 可指定独立测试工作区。密钥绑定 Windows 用户；本版本不提供跨用户迁移或备份恢复功能。
 
@@ -67,7 +70,15 @@ Kotlin 2.1.20 / Compose Desktop 1.8.2 / JDK 21 / JVM target 17 / Gradle 8.9. `Pr
 
 ## 验证与文档 / Verification and documentation
 
-0.3.0-dev 在 2026-10-22 完成 **137 项自动化回归，零失败、错误或跳过**，并成功构建自包含程序及本机 MSI。匿名题组独立保留集中，方框产生 115/120 个正确候选、圈数字 118/120 个，均为零错误候选；各有 32 个歧义题组，全部转人工。这些是生成像素的候选覆盖结果，不能推论真实扫描准确率，候选仍须人工核对。
+0.3.1-dev 在 2026-10-22 完成 **166 项不同自动化回归，零失败、错误或跳过**，并成功构建自包含程序及 MSI。新增分页／搜索、真实任务计数、跨页选择、过期响应、固定修订重跑、快照摘要及 12 项编辑恢复安全测试；既有答案、候选来源与四表契约回归通过。本轮没有重复开启 Microsoft Excel。
+
+On 2026-10-22, **all 166 distinct regression tests passed** for 0.3.1-dev, with no failures, errors or skips. The self-contained application and MSI built successfully. Paging/search, global task counts, cross-page selection, stale responses, pinned reruns, snapshot summaries and 12 recovery-safety tests are covered, alongside existing answer/provenance/four-sheet contracts. Native Microsoft Excel was not opened.
+
+新的 1,000 份加密记录读负载逐笔对账及重开检查通过：每份 10 个页槽、100 个答案目标，142 份缺末页，无实体影像。SQL 首页 50 笔用时 1,053.1ms，同负载旧式完整工作台摘要 5,696.0ms；五种搜索 919.2–1,050.4ms。先完整读取后查 SQL，暖缓存、每操作一次；不代表冷启动、GUI、影像、OCR 或采集速度。详见 [0.3.1 交付说明](docs/releases/0.3.1-dev.md) 与[量测摘要](output/validation/0.3.1-query-1000.json)。
+
+A separate 1,000-record encrypted metadata workload passed complete list comparison and reopening checks: 10 page slots and 100 targets per record, 142 missing last pages, and no physical images. The 50-row SQL page took 1,053.1ms versus 5,696.0ms for legacy full-workspace summaries; five searches took 919.2–1,050.4ms. Legacy reads ran first, then SQL, using warm caches and single samples. This does not measure cold starts, GUI latency, images, OCR or collection throughput. See the [0.3.1 notes](docs/releases/0.3.1-dev.md) and [read-workload evidence](output/validation/0.3.1-query-1000.json).
+
+0.3.0-dev 的历史记录：2026-10-22 完成 **137 项自动化回归，零失败、错误或跳过**，并成功构建自包含程序及本机 MSI。匿名题组独立保留集中，方框产生 115/120 个正确候选、圈数字 118/120 个，均为零错误候选；各有 32 个歧义题组，全部转人工。这些是生成像素的候选覆盖结果，不能推论真实扫描准确率，候选仍须人工核对。
 
 On 2026-10-22, **all 137 automated regression tests passed**, with no failures, errors or skips, and the self-contained application and local MSI built successfully. Anonymous question-group holdouts produced 115/120 correct checkbox candidates and 118/120 correct circled-digit candidates, with zero wrong candidates; all 32 additional ambiguous groups per style required human handling. These generated-pixel coverage results do not establish real-scan accuracy; candidates still require human review.
 
@@ -75,9 +86,9 @@ On 2026-10-22, **all 137 automated regression tests passed**, with no failures, 
 
 Actual-engine integration requires correct, non-null candidates for both mark styles and verifies two source references, human-answer protection through recalibration/rerun, three-language snapshots and reopening. Independent answer/four-sheet OOXML auditing passed all 144 checks across three anonymous single-record workbooks. GUI checks were limited to opening a project, template and calibration, and triggering preview in Traditional Chinese/light theme; preview-result display remains unverified.
 
-另通过 1,000 份后端人工覆核资料负载测试：每份 2 页、9 个答案目标，共用 2 张匿名影像；总耗时 510.658 秒，三语导出合计 3.948 秒，JVM heap pool 峰值约 264.9 MiB。三语工作簿合计 3,000 行、27,000 个答案值，独立 42,168 项检查全过；重开后核对 1,000 笔清单并抽核 3 份共 27 个答案。此测试不代表独立扫描、OCR 吞吐或 GUI 延迟；仓储尚无分页/数据库搜索 API，搜索计时只量完整读取后的程式端筛选。规模变体不累加到 137 项回归总数。
+0.3.0 另通过 1,000 份后端人工覆核资料负载测试：每份 2 页、9 个答案目标，共用 2 张匿名影像；总耗时 510.658 秒，三语导出合计 3.948 秒，JVM heap pool 峰值约 264.9 MiB。三语工作簿合计 3,000 行、27,000 个答案值，独立 42,168 项检查全过；重开后核对 1,000 笔清单并抽核 3 份共 27 个答案。此测试不代表独立扫描、OCR 吞吐或 GUI 延迟；0.3.0 当时尚无分页/数据库搜索 API，搜索计时只量完整读取后的程式端筛选。规模变体不累加到 137 项历史回归总数。
 
-A separate 1,000-record backend human-review workload passed: 2 pages and 9 answer targets per record, sharing 2 anonymous images. The run took 510.658 seconds, three-language export took 3.948 seconds combined, and peak JVM heap pools were approximately 264.9 MiB. Independent workbook auditing passed 42,168 checks across 3,000 response rows and 27,000 answer values; reopening verified the 1,000-record list and sampled 27 answers from 3 records. This does not measure independent scans, OCR throughput or GUI latency. Paging/database-search APIs are not implemented; search timings cover client-side filtering after full reads. The scale variant is not added to the 137-test regression total.
+In 0.3.0, a separate 1,000-record backend human-review workload passed: 2 pages and 9 answer targets per record, sharing 2 anonymous images. The run took 510.658 seconds, three-language export took 3.948 seconds combined, and peak JVM heap pools were approximately 264.9 MiB. Independent workbook auditing passed 42,168 checks across 3,000 response rows and 27,000 answer values; reopening verified the list and sampled 27 answers. This did not measure independent scans, OCR throughput or GUI latency. Version 0.3.0 had no paging/database-search APIs; its search timings measured client-side filtering after full reads. That scale variant is excluded from the historical 137-test total.
 
 依使用者目前偏好，后续以答案与 OOXML 核对为主，不在每次检查时自动打开 Microsoft Excel；本次没有新增原生 Excel 开启通过声明。完整三语人工流程、100%/150%/200% DPI、完整鼠标键盘操作、干净 Windows 安装/升级及剩余实机故障验收仍待完成。
 
@@ -97,10 +108,11 @@ Historical scale tests reused synthetic images and do not establish real-scan th
 
 - [工作阶段 / Progress and evidence](工作阶段.md)
 - [规划 / Product and architecture plan](规划.md)
-- [0.3 local delivery notes / 本机交付说明](docs/releases/0.3.0-dev.md) / [0.2 release notes](docs/releases/0.2.0-dev.md) / [0.1 archive notes](docs/releases/0.1.0-dev.md)
+- [0.3.1 current delivery / 最新交付](docs/releases/0.3.1-dev.md) / [0.3.0 earlier delivery](docs/releases/0.3.0-dev.md) / [0.2 release notes](docs/releases/0.2.0-dev.md) / [0.1 archive notes](docs/releases/0.1.0-dev.md)
+- [0.3.1 regression](output/validation/0.3.1-regression.json) / [SQL read workload](output/validation/0.3.1-query-1000.json) / [Package checks](output/validation/0.3.1-package.json)
 - [0.3 regression](output/validation/0.3.0-regression.json) / [Anonymous recognition](output/validation/0.3.0-recognition.json) / [Independent answer and OOXML checks](output/validation/0.3.0-answer-workbooks.json) / [Package checks](output/validation/0.3.0-package.json)
 - [Limited desktop smoke](output/validation/0.3.0-desktop-smoke.json)
 - [1,000-record workload](output/validation/0.3.0-scale.json) / [Scale answer and OOXML checks](output/validation/0.3.0-scale-workbooks.json)
-- [Current build summary](output/validation/build-summary.json) / [0.2 historical build summary](output/validation/build-summary-0.2.0.json)
+- [Current build summary](output/validation/build-summary.json) / [0.3.0 historical summary](output/validation/build-summary-0.3.0.json) / [0.2 historical build summary](output/validation/build-summary-0.2.0.json)
 - [Verified GitHub publication](output/validation/github-publication.json)
 - [Third-party inventory](runtime/THIRD_PARTY_NOTICES.txt); component licenses/manifests are retained under `runtime/`. Source provenance is recorded in each applicable module.

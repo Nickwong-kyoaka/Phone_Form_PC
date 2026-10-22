@@ -1,14 +1,146 @@
 {
-  "appVersion": "0.3.0-dev",
-  "installerVersion": "0.3.0",
-  "checkedAt": "2026-10-22T15:34:38.5392631+08:00",
+  "appVersion": "0.3.1-dev",
+  "installerVersion": "0.3.1",
+  "checkedAt": "2026-10-22T16:45:34.7399250+08:00",
   "platform": "Windows 11 x64",
   "tests": {
-    "total": 137,
+    "total": 166,
     "failures": 0,
     "errors": 0,
     "skipped": 0,
     "suites": [
+      {
+        "module": "domain",
+        "name": "com.phoneform.ai.core.model.LanguageSeparationTest",
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "durationSeconds": 0.089,
+        "suiteTimestampUtc": "2026-10-22T08:29:03",
+        "report": "desktop/build/reports/pc-r4.1/full-regression-xml/domain/TEST-com.phoneform.ai.core.model.LanguageSeparationTest.xml",
+        "reportSha256": "01004907f8bc825d00368340a22799a769c31aa77aac434dba58ac9f506a2501"
+      },
+      {
+        "module": "domain",
+        "name": "com.phoneform.ai.core.model.OutputLayoutTest",
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "durationSeconds": 0.036,
+        "suiteTimestampUtc": "2026-10-22T08:29:03",
+        "report": "desktop/build/reports/pc-r4.1/full-regression-xml/domain/TEST-com.phoneform.ai.core.model.OutputLayoutTest.xml",
+        "reportSha256": "4e5d3b22bdbc55f7ef28a8001de8315bcbe7e50f1de7421464e48abdfb47edb0"
+      },
+      {
+        "module": "domain",
+        "name": "com.phoneform.ai.core.model.PageProcessingFingerprintTest",
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "durationSeconds": 0.031,
+        "suiteTimestampUtc": "2026-10-22T08:29:04",
+        "report": "desktop/build/reports/pc-r4.1/full-regression-xml/domain/TEST-com.phoneform.ai.core.model.PageProcessingFingerprintTest.xml",
+        "reportSha256": "0422104f52a00eaf225f25d1645de1e2831d977dd37d7033993fc5eb08511998"
+      },
+      {
+        "module": "domain",
+        "name": "com.phoneform.ai.core.model.ProjectOperationGateTest",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "durationSeconds": 0.261,
+        "suiteTimestampUtc": "2026-10-22T08:29:04",
+        "report": "desktop/build/reports/pc-r4.1/full-regression-xml/domain/TEST-com.phoneform.ai.core.model.ProjectOperationGateTest.xml",
+        "reportSha256": "3a82b5ece1b296b22a8ee7aeffe3641d1a63bc15ec4637a010655a977fb027d3"
+      },
+      {
+        "module": "domain",
+        "name": "com.phoneform.ai.core.model.ProjectValidationTest",
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "durationSeconds": 0.012,
+        "suiteTimestampUtc": "2026-10-22T08:29:04",
+        "report": "desktop/build/reports/pc-r4.1/full-regression-xml/domain/TEST-com.phoneform.ai.core.model.ProjectValidationTest.xml",
+        "reportSha256": "0a59a763395ffb6b51c91a3130b8c8acfbf4f676c123fc0b15a5696198652fd5"
+      },
+      {
+        "module": "domain",
+        "name": "com.phoneform.ai.core.model.RecognitionSettingsTest",
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "durationSeconds": 0.034,
+        "suiteTimestampUtc": "2026-10-22T08:29:04",
+        "report": "desktop/build/reports/pc-r4.1/full-regression-xml/domain/TEST-com.phoneform.ai.core.model.RecognitionSettingsTest.xml",
+        "reportSha256": "db8e819f5857f7af3d7d7b0877c509b996c01b5e58952a172844d3ffcb056a8a"
+      },
+      {
+        "module": "domain",
+        "name": "com.phoneform.ai.core.model.ReviewValidationTest",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "durationSeconds": 0.019,
+        "suiteTimestampUtc": "2026-10-22T08:29:04",
+        "report": "desktop/build/reports/pc-r4.1/full-regression-xml/domain/TEST-com.phoneform.ai.core.model.ReviewValidationTest.xml",
+        "reportSha256": "600135dbfe8d325f8234cea6bff265c9585f58ac0c558b71618c8a3f7182eedf"
+      },
+      {
+        "module": "domain",
+        "name": "com.phoneform.ai.core.model.TemplateValidationTest",
+        "tests": 8,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "durationSeconds": 0.019,
+        "suiteTimestampUtc": "2026-10-22T08:29:04",
+        "report": "desktop/build/reports/pc-r4.1/full-regression-xml/domain/TEST-com.phoneform.ai.core.model.TemplateValidationTest.xml",
+        "reportSha256": "ec45141c8359e8aad30ecaff2760928dccd4d64252e6ccf3c4144877ae46256b"
+      },
+      {
+        "module": "excel",
+        "name": "com.phoneform.ai.core.data.ExportLanguageTest",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "durationSeconds": 0.283,
+        "suiteTimestampUtc": "2026-10-22T08:29:01",
+        "report": "desktop/build/reports/pc-r4.1/full-regression-xml/excel/TEST-com.phoneform.ai.core.data.ExportLanguageTest.xml",
+        "reportSha256": "02bf4bbfbd578c4869d44cf428cc33e015cc006366070ff9603f0bdef35a9b54"
+      },
+      {
+        "module": "excel",
+        "name": "com.phoneform.ai.core.data.ExportLayoutWorkbookTest",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "durationSeconds": 0.081,
+        "suiteTimestampUtc": "2026-10-22T08:29:01",
+        "report": "desktop/build/reports/pc-r4.1/full-regression-xml/excel/TEST-com.phoneform.ai.core.data.ExportLayoutWorkbookTest.xml",
+        "reportSha256": "52c0ab04ce40172389145bc256452c97af42a206af9b2719e6996a64172fed4a"
+      },
+      {
+        "module": "excel",
+        "name": "com.phoneform.ai.core.data.XlsxWriterTest",
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "durationSeconds": 0.131,
+        "suiteTimestampUtc": "2026-10-22T08:29:01",
+        "report": "desktop/build/reports/pc-r4.1/full-regression-xml/excel/TEST-com.phoneform.ai.core.data.XlsxWriterTest.xml",
+        "reportSha256": "d449bb0d922d4aa9b365c496970cde501b6bfce793c25497226929a2fe02ac38"
+      },
       {
         "module": "data",
         "name": "com.phoneform.desktop.data.DesktopRepositoriesTest",
@@ -16,11 +148,22 @@
         "failures": 0,
         "errors": 0,
         "skipped": 0,
-        "durationSeconds": 4.343,
-        "suiteTimestampUtc": "2026-10-22T07:07:59",
-        "report": "data/build/test-results/test/TEST-com.phoneform.desktop.data.DesktopRepositoriesTest.xml",
-        "reportModifiedAt": "2026-10-22T15:08:34.710939+08:00",
-        "reportSha256": "c1753671908b3a8dc4df7cd54485becd76189175bbffa565276b436b31cf0217"
+        "durationSeconds": 6.113,
+        "suiteTimestampUtc": "2026-10-22T08:32:48",
+        "report": "desktop/build/reports/pc-r4.1/full-regression-xml/data/TEST-com.phoneform.desktop.data.DesktopRepositoriesTest.xml",
+        "reportSha256": "e2c7970a5a0e8da5af244e7a406f51cfa53a36ee026cdb8afe3e7a5f747444d7"
+      },
+      {
+        "module": "data",
+        "name": "com.phoneform.desktop.data.ListQueriesTest",
+        "tests": 9,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "durationSeconds": 4.122,
+        "suiteTimestampUtc": "2026-10-22T08:32:54",
+        "report": "desktop/build/reports/pc-r4.1/full-regression-xml/data/TEST-com.phoneform.desktop.data.ListQueriesTest.xml",
+        "reportSha256": "0cf10d801f3ce76ce26cd49153ace999ecbab0cd1aa37ae266a34c4795a125a3"
       },
       {
         "module": "data",
@@ -29,11 +172,22 @@
         "failures": 0,
         "errors": 0,
         "skipped": 0,
-        "durationSeconds": 2.906,
-        "suiteTimestampUtc": "2026-10-22T07:08:04",
-        "report": "data/build/test-results/test/TEST-com.phoneform.desktop.data.RecognitionContractsTest.xml",
-        "reportModifiedAt": "2026-10-22T15:08:34.710939+08:00",
-        "reportSha256": "74b8e2c753554020814672d2ee78437c169bc244841d0714600fb1e58fecd504"
+        "durationSeconds": 3.72,
+        "suiteTimestampUtc": "2026-10-22T08:32:58",
+        "report": "desktop/build/reports/pc-r4.1/full-regression-xml/data/TEST-com.phoneform.desktop.data.RecognitionContractsTest.xml",
+        "reportSha256": "5acaf7de41c171482d7599181f6a281a3117b22f499ac0eb67e551905ffdb334"
+      },
+      {
+        "module": "data",
+        "name": "com.phoneform.desktop.data.ReviewQueryPerformanceTest",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "durationSeconds": 4.184,
+        "suiteTimestampUtc": "2026-10-22T08:33:02",
+        "report": "desktop/build/reports/pc-r4.1/full-regression-xml/data/TEST-com.phoneform.desktop.data.ReviewQueryPerformanceTest.xml",
+        "reportSha256": "b90548fccea65999e9e8a63b7fd20c46d564e6a10de4957b26342aa7593bad86"
       },
       {
         "module": "data",
@@ -42,11 +196,10 @@
         "failures": 0,
         "errors": 0,
         "skipped": 0,
-        "durationSeconds": 23.468,
-        "suiteTimestampUtc": "2026-10-22T07:08:06",
-        "report": "data/build/test-results/test/TEST-com.phoneform.desktop.security.PdfClientTest.xml",
-        "reportModifiedAt": "2026-10-22T15:08:34.710939+08:00",
-        "reportSha256": "513c3759fecd717c00ff93dfd8fb611f08df38208328bdc7fea5c4e6027af24d"
+        "durationSeconds": 36.251,
+        "suiteTimestampUtc": "2026-10-22T08:33:06",
+        "report": "desktop/build/reports/pc-r4.1/full-regression-xml/data/TEST-com.phoneform.desktop.security.PdfClientTest.xml",
+        "reportSha256": "062d3d52898df2f9b8231178479a12a7c29ff8ba529a4f7daf4f9f9088683b8f"
       },
       {
         "module": "data",
@@ -55,11 +208,10 @@
         "failures": 0,
         "errors": 0,
         "skipped": 0,
-        "durationSeconds": 2.488,
-        "suiteTimestampUtc": "2026-10-22T07:08:30",
-        "report": "data/build/test-results/test/TEST-com.phoneform.desktop.security.SchemaMigrationTest.xml",
-        "reportModifiedAt": "2026-10-22T15:08:34.710939+08:00",
-        "reportSha256": "ad8dfa969745353e0987f656e166e0d57812a87f227fee63a750ce8f7337ce97"
+        "durationSeconds": 3.41,
+        "suiteTimestampUtc": "2026-10-22T08:33:42",
+        "report": "desktop/build/reports/pc-r4.1/full-regression-xml/data/TEST-com.phoneform.desktop.security.SchemaMigrationTest.xml",
+        "reportSha256": "195bccff8e115822e3f9ea83eb062397ffccfd8f9dd7d2292a017fc91b76403e"
       },
       {
         "module": "data",
@@ -68,11 +220,58 @@
         "failures": 0,
         "errors": 0,
         "skipped": 0,
-        "durationSeconds": 1.792,
-        "suiteTimestampUtc": "2026-10-22T07:08:32",
-        "report": "data/build/test-results/test/TEST-com.phoneform.desktop.security.SecureWorkspaceTest.xml",
-        "reportModifiedAt": "2026-10-22T15:08:34.710939+08:00",
-        "reportSha256": "11d9059059e43e219e4cfa278fb0098dc577f861021b0a81eb37412f32443955"
+        "durationSeconds": 3.424,
+        "suiteTimestampUtc": "2026-10-22T08:32:45",
+        "report": "desktop/build/reports/pc-r4.1/full-regression-xml/data/TEST-com.phoneform.desktop.security.SecureWorkspaceTest.xml",
+        "reportSha256": "8698cec0933685b8da02ea1ea50105fc83db0b9770f9df2406fbdb8409b1b62f"
+      },
+      {
+        "module": "vision",
+        "name": "com.phoneform.desktop.vision.AnonymousMarkAcceptanceTest",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "durationSeconds": 8.546,
+        "suiteTimestampUtc": "2026-10-22T08:29:29",
+        "report": "desktop/build/reports/pc-r4.1/full-regression-xml/vision/TEST-com.phoneform.desktop.vision.AnonymousMarkAcceptanceTest.xml",
+        "reportSha256": "a43ad1c10054dba9a1b82bfb09ccfcaf6c3286deefb51a0f8e9cb125166be01e"
+      },
+      {
+        "module": "vision",
+        "name": "com.phoneform.desktop.vision.DesktopVisionTest",
+        "tests": 17,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "durationSeconds": 2.258,
+        "suiteTimestampUtc": "2026-10-22T08:29:38",
+        "report": "desktop/build/reports/pc-r4.1/full-regression-xml/vision/TEST-com.phoneform.desktop.vision.DesktopVisionTest.xml",
+        "reportSha256": "dcf334cb92ed679e5a10a3970cc0608e80a1031d2e42fdc44e8d3ec657c95f84"
+      },
+      {
+        "module": "vision",
+        "name": "com.phoneform.desktop.vision.OfflineOcrTest",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "durationSeconds": 3.512,
+        "suiteTimestampUtc": "2026-10-22T08:29:40",
+        "report": "desktop/build/reports/pc-r4.1/full-regression-xml/vision/TEST-com.phoneform.desktop.vision.OfflineOcrTest.xml",
+        "reportSha256": "c36385b4a7c7a93fa11a961ced4ce1187a5e7383fd776ca49b4ab3885f7e57e3"
+      },
+      {
+        "module": "vision",
+        "name": "com.phoneform.desktop.vision.TemplateCandidateDetectorTest",
+        "tests": 12,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "durationSeconds": 0.062,
+        "suiteTimestampUtc": "2026-10-22T08:29:44",
+        "report": "desktop/build/reports/pc-r4.1/full-regression-xml/vision/TEST-com.phoneform.desktop.vision.TemplateCandidateDetectorTest.xml",
+        "reportSha256": "9f0d523122e715bc71257b014c26dfa544932f7df9e51286801271adc34f354c"
       },
       {
         "module": "desktop",
@@ -81,11 +280,10 @@
         "failures": 0,
         "errors": 0,
         "skipped": 0,
-        "durationSeconds": 0.031,
-        "suiteTimestampUtc": "2026-10-22T07:24:10",
-        "report": "desktop/build/reports/pc-r4/full-regression-xml/TEST-com.phoneform.desktop.CalibrationCopySettingsTest.xml",
-        "reportModifiedAt": "2026-10-22T15:24:25.1308289+08:00",
-        "reportSha256": "c81e325792f69a503ede36ac4df6080cd7d101930411a4bf87659e8a2dd0d5a8"
+        "durationSeconds": 0.006,
+        "suiteTimestampUtc": "2026-10-22T08:40:05",
+        "report": "desktop/build/reports/pc-r4.1/full-regression-xml/desktop/TEST-com.phoneform.desktop.CalibrationCopySettingsTest.xml",
+        "reportSha256": "76974abebd94a96e48a0cee67b95d2c8252005930a053ff1c21c38f06ecc1597"
       },
       {
         "module": "desktop",
@@ -94,11 +292,10 @@
         "failures": 0,
         "errors": 0,
         "skipped": 0,
-        "durationSeconds": 0.021,
-        "suiteTimestampUtc": "2026-10-22T07:24:10",
-        "report": "desktop/build/reports/pc-r4/full-regression-xml/TEST-com.phoneform.desktop.CalibrationGeometryTest.xml",
-        "reportModifiedAt": "2026-10-22T15:24:25.1308289+08:00",
-        "reportSha256": "67a94f60c0493a04e69083aeb75dcc65d6c00eb066cc8631bae4fe7a31157b7d"
+        "durationSeconds": 0.013,
+        "suiteTimestampUtc": "2026-10-22T08:40:05",
+        "report": "desktop/build/reports/pc-r4.1/full-regression-xml/desktop/TEST-com.phoneform.desktop.CalibrationGeometryTest.xml",
+        "reportSha256": "21c39d62de3a01da2512a2f6723266af64956e7a0c095c61247859c4d5c4afec"
       },
       {
         "module": "desktop",
@@ -107,24 +304,22 @@
         "failures": 0,
         "errors": 0,
         "skipped": 0,
-        "durationSeconds": 0.003,
-        "suiteTimestampUtc": "2026-10-22T07:24:10",
-        "report": "desktop/build/reports/pc-r4/full-regression-xml/TEST-com.phoneform.desktop.CanvasPreferenceTest.xml",
-        "reportModifiedAt": "2026-10-22T15:24:25.1308289+08:00",
-        "reportSha256": "b6aa17d3eec3aa9f11b503f338405541fa1d38d4a95f1ab7a160ca9c2c230d2d"
+        "durationSeconds": 0.001,
+        "suiteTimestampUtc": "2026-10-22T08:40:05",
+        "report": "desktop/build/reports/pc-r4.1/full-regression-xml/desktop/TEST-com.phoneform.desktop.CanvasPreferenceTest.xml",
+        "reportSha256": "213de1bdabd97d023dfe7850ff975d9f3ef55a7dbef62324784cd6068b959215"
       },
       {
         "module": "desktop",
         "name": "com.phoneform.desktop.DataPresentationTest",
-        "tests": 8,
+        "tests": 9,
         "failures": 0,
         "errors": 0,
         "skipped": 0,
-        "durationSeconds": 0.022,
-        "suiteTimestampUtc": "2026-10-22T07:24:10",
-        "report": "desktop/build/reports/pc-r4/full-regression-xml/TEST-com.phoneform.desktop.DataPresentationTest.xml",
-        "reportModifiedAt": "2026-10-22T15:24:25.1308289+08:00",
-        "reportSha256": "28ac8bca8f8dcc14e417379259b69e0a69ed0637b49acca60dd15eb9e4e801d5"
+        "durationSeconds": 0.033,
+        "suiteTimestampUtc": "2026-10-22T08:40:05",
+        "report": "desktop/build/reports/pc-r4.1/full-regression-xml/desktop/TEST-com.phoneform.desktop.DataPresentationTest.xml",
+        "reportSha256": "85895fb3a8f42bcc4fa3c5558fa9a98f3f2fec87552a75952cba9ca550508f51"
       },
       {
         "module": "desktop",
@@ -133,11 +328,10 @@
         "failures": 0,
         "errors": 0,
         "skipped": 0,
-        "durationSeconds": 5.133,
-        "suiteTimestampUtc": "2026-10-22T07:24:10",
-        "report": "desktop/build/reports/pc-r4/full-regression-xml/TEST-com.phoneform.desktop.DesktopControllerTest.xml",
-        "reportModifiedAt": "2026-10-22T15:24:25.1308289+08:00",
-        "reportSha256": "fe95179edfd64f4a28cc00c453424ca6945caa99d692d5f33fa7e7b23d508c36"
+        "durationSeconds": 4.945,
+        "suiteTimestampUtc": "2026-10-22T08:40:05",
+        "report": "desktop/build/reports/pc-r4.1/full-regression-xml/desktop/TEST-com.phoneform.desktop.DesktopControllerTest.xml",
+        "reportSha256": "5dabf1dd2644e0edd4cadbc34c9f9327b77b51651fddfc893d8c60b4f9bac094"
       },
       {
         "module": "desktop",
@@ -146,24 +340,34 @@
         "failures": 0,
         "errors": 0,
         "skipped": 0,
-        "durationSeconds": 3.687,
-        "suiteTimestampUtc": "2026-10-22T07:24:06",
-        "report": "desktop/build/reports/pc-r4/full-regression-xml/TEST-com.phoneform.desktop.DesktopRecognitionWorkflowTest.xml",
-        "reportModifiedAt": "2026-10-22T15:24:25.1308289+08:00",
-        "reportSha256": "70e7e53674e0daea10444795fbe46401748b9a8b8f7497a262910bff8bb551a2"
+        "durationSeconds": 1.683,
+        "suiteTimestampUtc": "2026-10-22T08:40:10",
+        "report": "desktop/build/reports/pc-r4.1/full-regression-xml/desktop/TEST-com.phoneform.desktop.DesktopRecognitionWorkflowTest.xml",
+        "reportSha256": "71b7129f683b628aaa2a215fdc85f61dcbb1622747d5cc9b8b3b55ae00c29808"
+      },
+      {
+        "module": "desktop",
+        "name": "com.phoneform.desktop.DesktopReviewPagingTest",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "durationSeconds": 1.878,
+        "suiteTimestampUtc": "2026-10-22T08:40:12",
+        "report": "desktop/build/reports/pc-r4.1/full-regression-xml/desktop/TEST-com.phoneform.desktop.DesktopReviewPagingTest.xml",
+        "reportSha256": "ae5c26bd2c7e7d6dfe863d3a5ae5a321cc28d7ba40912aeffb61a392db1f2891"
       },
       {
         "module": "desktop",
         "name": "com.phoneform.desktop.DesktopUiStateTest",
-        "tests": 2,
+        "tests": 3,
         "failures": 0,
         "errors": 0,
         "skipped": 0,
-        "durationSeconds": 1.364,
-        "suiteTimestampUtc": "2026-10-22T07:24:15",
-        "report": "desktop/build/reports/pc-r4/full-regression-xml/TEST-com.phoneform.desktop.DesktopUiStateTest.xml",
-        "reportModifiedAt": "2026-10-22T15:24:25.1308289+08:00",
-        "reportSha256": "738de0c8f6385b089d8d3b1e865a5a6e49a47b91b5427b4293b2230da05d1b6b"
+        "durationSeconds": 1.187,
+        "suiteTimestampUtc": "2026-10-22T08:40:14",
+        "report": "desktop/build/reports/pc-r4.1/full-regression-xml/desktop/TEST-com.phoneform.desktop.DesktopUiStateTest.xml",
+        "reportSha256": "aa56e5be0bde8c0f02029108903f47a03f19a970380deddff7cb6f61c5451171"
       },
       {
         "module": "desktop",
@@ -172,11 +376,34 @@
         "failures": 0,
         "errors": 0,
         "skipped": 0,
-        "durationSeconds": 7.754,
-        "suiteTimestampUtc": "2026-10-22T07:24:17",
-        "report": "desktop/build/reports/pc-r4/full-regression-xml/TEST-com.phoneform.desktop.DesktopWorkflowTest.xml",
-        "reportModifiedAt": "2026-10-22T15:24:25.1308289+08:00",
-        "reportSha256": "87d4da0a7073ddebdb37216a8e769349de11f9c2b52857f2e88bbaf7fd5519f3"
+        "durationSeconds": 7.455,
+        "suiteTimestampUtc": "2026-10-22T08:40:15",
+        "report": "desktop/build/reports/pc-r4.1/full-regression-xml/desktop/TEST-com.phoneform.desktop.DesktopWorkflowTest.xml",
+        "reportSha256": "28db989fe491a2297e058ff9334f598f71280452deaab41c20af8c59d0be9da6"
+      },
+      {
+        "module": "desktop",
+        "name": "com.phoneform.desktop.EditorRecoverySafetyTest",
+        "tests": 12,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "durationSeconds": 4.797,
+        "suiteTimestampUtc": "2026-10-22T08:40:01",
+        "report": "desktop/build/reports/pc-r4.1/full-regression-xml/desktop/TEST-com.phoneform.desktop.EditorRecoverySafetyTest.xml",
+        "reportSha256": "128548f049800607142b49c92fcbfb58e31f3892fed5c644b278cee615ccdf12"
+      },
+      {
+        "module": "desktop",
+        "name": "com.phoneform.desktop.ReviewPageLoaderTest",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "durationSeconds": 0.43,
+        "suiteTimestampUtc": "2026-10-22T08:40:23",
+        "report": "desktop/build/reports/pc-r4.1/full-regression-xml/desktop/TEST-com.phoneform.desktop.ReviewPageLoaderTest.xml",
+        "reportSha256": "2a9317dced14f396bdb619da252dbec1cd5906fd4233762913f5f13e46b9886c"
       },
       {
         "module": "desktop",
@@ -186,205 +413,9 @@
         "errors": 0,
         "skipped": 0,
         "durationSeconds": 0.005,
-        "suiteTimestampUtc": "2026-10-22T07:24:24",
-        "report": "desktop/build/reports/pc-r4/full-regression-xml/TEST-com.phoneform.desktop.ScopedSaveActionsTest.xml",
-        "reportModifiedAt": "2026-10-22T15:24:25.1308289+08:00",
-        "reportSha256": "c90e7e108f071a0e68014607ce5bc4d1f84b0190ac86f9c203f0b670ca364054"
-      },
-      {
-        "module": "domain",
-        "name": "com.phoneform.ai.core.model.LanguageSeparationTest",
-        "tests": 3,
-        "failures": 0,
-        "errors": 0,
-        "skipped": 0,
-        "durationSeconds": 0.074,
-        "suiteTimestampUtc": "2026-10-22T07:07:06",
-        "report": "domain/build/test-results/test/TEST-com.phoneform.ai.core.model.LanguageSeparationTest.xml",
-        "reportModifiedAt": "2026-10-22T15:07:07.519339+08:00",
-        "reportSha256": "9939faa8d9534e1ad25b6ad489b08e6b6ca4ab7c87e1c420988a45c2f4729eb3"
-      },
-      {
-        "module": "domain",
-        "name": "com.phoneform.ai.core.model.OutputLayoutTest",
-        "tests": 5,
-        "failures": 0,
-        "errors": 0,
-        "skipped": 0,
-        "durationSeconds": 0.024,
-        "suiteTimestampUtc": "2026-10-22T07:07:07",
-        "report": "domain/build/test-results/test/TEST-com.phoneform.ai.core.model.OutputLayoutTest.xml",
-        "reportModifiedAt": "2026-10-22T15:07:07.519339+08:00",
-        "reportSha256": "7df08a5c0ca37a4b41f55759ed8262fec3f16f0e8444755d7d39dbd1c3880564"
-      },
-      {
-        "module": "domain",
-        "name": "com.phoneform.ai.core.model.PageProcessingFingerprintTest",
-        "tests": 3,
-        "failures": 0,
-        "errors": 0,
-        "skipped": 0,
-        "durationSeconds": 0.027,
-        "suiteTimestampUtc": "2026-10-22T07:07:07",
-        "report": "domain/build/test-results/test/TEST-com.phoneform.ai.core.model.PageProcessingFingerprintTest.xml",
-        "reportModifiedAt": "2026-10-22T15:07:07.519339+08:00",
-        "reportSha256": "61ba7657bad7ff5d12cf529b76f0ea66cbbec55ef0abfe4a3875d2d6fa64f621"
-      },
-      {
-        "module": "domain",
-        "name": "com.phoneform.ai.core.model.ProjectOperationGateTest",
-        "tests": 4,
-        "failures": 0,
-        "errors": 0,
-        "skipped": 0,
-        "durationSeconds": 0.183,
-        "suiteTimestampUtc": "2026-10-22T07:07:07",
-        "report": "domain/build/test-results/test/TEST-com.phoneform.ai.core.model.ProjectOperationGateTest.xml",
-        "reportModifiedAt": "2026-10-22T15:07:07.519339+08:00",
-        "reportSha256": "c0a9040cc0c426dd95cf5d624ae6b9799089cf00b82acd1e7bac7de8d3a5e8b0"
-      },
-      {
-        "module": "domain",
-        "name": "com.phoneform.ai.core.model.ProjectValidationTest",
-        "tests": 5,
-        "failures": 0,
-        "errors": 0,
-        "skipped": 0,
-        "durationSeconds": 0.009,
-        "suiteTimestampUtc": "2026-10-22T07:07:07",
-        "report": "domain/build/test-results/test/TEST-com.phoneform.ai.core.model.ProjectValidationTest.xml",
-        "reportModifiedAt": "2026-10-22T15:07:07.519339+08:00",
-        "reportSha256": "d5f3e7440992c3fa6e63ee168d5f2ea95c45d3b060110b6e16cf641022c2762c"
-      },
-      {
-        "module": "domain",
-        "name": "com.phoneform.ai.core.model.RecognitionSettingsTest",
-        "tests": 5,
-        "failures": 0,
-        "errors": 0,
-        "skipped": 0,
-        "durationSeconds": 0.025,
-        "suiteTimestampUtc": "2026-10-22T07:07:07",
-        "report": "domain/build/test-results/test/TEST-com.phoneform.ai.core.model.RecognitionSettingsTest.xml",
-        "reportModifiedAt": "2026-10-22T15:07:07.519339+08:00",
-        "reportSha256": "43b38877e53127bc64583bf423d9e1f996754a58b5ccb20161e10a4f599e9384"
-      },
-      {
-        "module": "domain",
-        "name": "com.phoneform.ai.core.model.ReviewValidationTest",
-        "tests": 4,
-        "failures": 0,
-        "errors": 0,
-        "skipped": 0,
-        "durationSeconds": 0.014,
-        "suiteTimestampUtc": "2026-10-22T07:07:07",
-        "report": "domain/build/test-results/test/TEST-com.phoneform.ai.core.model.ReviewValidationTest.xml",
-        "reportModifiedAt": "2026-10-22T15:07:07.519339+08:00",
-        "reportSha256": "6951ad7969d517c97b2dba1a5ca3f81b581b8fa7dbf061bebcc2ab0c022b5b47"
-      },
-      {
-        "module": "domain",
-        "name": "com.phoneform.ai.core.model.TemplateValidationTest",
-        "tests": 8,
-        "failures": 0,
-        "errors": 0,
-        "skipped": 0,
-        "durationSeconds": 0.012,
-        "suiteTimestampUtc": "2026-10-22T07:07:07",
-        "report": "domain/build/test-results/test/TEST-com.phoneform.ai.core.model.TemplateValidationTest.xml",
-        "reportModifiedAt": "2026-10-22T15:07:07.519339+08:00",
-        "reportSha256": "f2e403ccb3c3f0e54bad3c11e265a6a7985edebfb03ea75a36c72dcc329ad99f"
-      },
-      {
-        "module": "excel",
-        "name": "com.phoneform.ai.core.data.ExportLanguageTest",
-        "tests": 1,
-        "failures": 0,
-        "errors": 0,
-        "skipped": 0,
-        "durationSeconds": 0.203,
-        "suiteTimestampUtc": "2026-10-22T07:42:09",
-        "report": "excel/build/test-results/test/TEST-com.phoneform.ai.core.data.ExportLanguageTest.xml",
-        "reportModifiedAt": "2026-10-22T15:42:09.9188197+08:00",
-        "reportSha256": "fc563d12ef30e78c7832811e7592c28efdf5ee57ba9fd212493987c5238c5191"
-      },
-      {
-        "module": "excel",
-        "name": "com.phoneform.ai.core.data.ExportLayoutWorkbookTest",
-        "tests": 1,
-        "failures": 0,
-        "errors": 0,
-        "skipped": 0,
-        "durationSeconds": 0.043,
-        "suiteTimestampUtc": "2026-10-22T07:42:09",
-        "report": "excel/build/test-results/test/TEST-com.phoneform.ai.core.data.ExportLayoutWorkbookTest.xml",
-        "reportModifiedAt": "2026-10-22T15:42:09.9188197+08:00",
-        "reportSha256": "431db579ca60c2c3ece024e414ebc9d4f5e7419d2c2d2d7e0316c9d017252c14"
-      },
-      {
-        "module": "excel",
-        "name": "com.phoneform.ai.core.data.XlsxWriterTest",
-        "tests": 6,
-        "failures": 0,
-        "errors": 0,
-        "skipped": 0,
-        "durationSeconds": 0.055,
-        "suiteTimestampUtc": "2026-10-22T07:42:09",
-        "report": "excel/build/test-results/test/TEST-com.phoneform.ai.core.data.XlsxWriterTest.xml",
-        "reportModifiedAt": "2026-10-22T15:42:09.9188197+08:00",
-        "reportSha256": "e51e95970d5eaed7d13f19b7ab708df0080bde28592fd932ff01851dcc2b7de6"
-      },
-      {
-        "module": "vision",
-        "name": "com.phoneform.desktop.vision.AnonymousMarkAcceptanceTest",
-        "tests": 2,
-        "failures": 0,
-        "errors": 0,
-        "skipped": 0,
-        "durationSeconds": 6.954,
-        "suiteTimestampUtc": "2026-10-22T07:07:36",
-        "report": "vision/build/test-results/test/TEST-com.phoneform.desktop.vision.AnonymousMarkAcceptanceTest.xml",
-        "reportModifiedAt": "2026-10-22T15:07:49.1455551+08:00",
-        "reportSha256": "2f8c8ca9d9f9a5f9eb45265c0952b1dc3f2da3e7b9bc6be10bc504a6d3269597"
-      },
-      {
-        "module": "vision",
-        "name": "com.phoneform.desktop.vision.DesktopVisionTest",
-        "tests": 17,
-        "failures": 0,
-        "errors": 0,
-        "skipped": 0,
-        "durationSeconds": 1.903,
-        "suiteTimestampUtc": "2026-10-22T07:07:43",
-        "report": "vision/build/test-results/test/TEST-com.phoneform.desktop.vision.DesktopVisionTest.xml",
-        "reportModifiedAt": "2026-10-22T15:07:49.1444054+08:00",
-        "reportSha256": "e94b1628bac2ce6ddc17229e9939d6603be988094b6e4cc3939e8c0f6b3afcf9"
-      },
-      {
-        "module": "vision",
-        "name": "com.phoneform.desktop.vision.OfflineOcrTest",
-        "tests": 2,
-        "failures": 0,
-        "errors": 0,
-        "skipped": 0,
-        "durationSeconds": 3.733,
-        "suiteTimestampUtc": "2026-10-22T07:07:45",
-        "report": "vision/build/test-results/test/TEST-com.phoneform.desktop.vision.OfflineOcrTest.xml",
-        "reportModifiedAt": "2026-10-22T15:07:49.1444054+08:00",
-        "reportSha256": "b1711fcab2be3ae2d53af303fded38e3b16a9276a83bc34df6b292d76477ea2e"
-      },
-      {
-        "module": "vision",
-        "name": "com.phoneform.desktop.vision.TemplateCandidateDetectorTest",
-        "tests": 12,
-        "failures": 0,
-        "errors": 0,
-        "skipped": 0,
-        "durationSeconds": 0.052,
-        "suiteTimestampUtc": "2026-10-22T07:07:48",
-        "report": "vision/build/test-results/test/TEST-com.phoneform.desktop.vision.TemplateCandidateDetectorTest.xml",
-        "reportModifiedAt": "2026-10-22T15:07:49.1434066+08:00",
-        "reportSha256": "5a1115cd75d6cc04bc1f3792cd82c5cf662796d57d0fb2d3d03cc741ff703c04"
+        "suiteTimestampUtc": "2026-10-22T08:40:23",
+        "report": "desktop/build/reports/pc-r4.1/full-regression-xml/desktop/TEST-com.phoneform.desktop.ScopedSaveActionsTest.xml",
+        "reportSha256": "eae1517fa570bb97fc698714d6e228b73ec7da3cd326aa6001fdd11e0e13548c"
       }
     ]
   },
@@ -394,34 +425,31 @@
       "result": "PASS"
     },
     {
-      "command": "scripts/Verify-AnonymousWorkbooks.py QA_DIRECTORY 1 --profile recognition",
-      "result": "PASS: 144 independent checks across three workbooks"
+      "command": "PHONEFORM_QUERY_SCALE_COUNT=1000; .\\scripts\\Invoke-Build.ps1 -Tasks ':data:cleanTest',':data:test','--tests','com.phoneform.desktop.data.ReviewQueryPerformanceTest','-Pkotlin.compiler.execution.strategy=in-process'",
+      "result": "PASS; all 1000 list rows, search, neighbors, counts and reopening checked; metadata only"
     },
     {
-      "command": "scripts/Verify-Runtime.ps1 -ApplicationDirectory DISTRIBUTABLE",
-      "result": "PASS; bundled Java launcher also executed"
-    },
-    {
-      "command": ".\\scripts\\Invoke-Build.ps1 -Tasks ':excel:test','-Pkotlin.compiler.execution.strategy=in-process'",
-      "result": "PASS; temporary-output cleanup protection"
+      "command": "scripts/Verify-Runtime.ps1 -ApplicationDirectory DISTRIBUTABLE; bundled Java -version; application jar/resource hash verification",
+      "result": "PASS"
     }
   ],
   "msi": {
-    "file": "output/PhoneForm-AI-PC-0.3.0-dev.msi",
-    "bytes": 161005795,
-    "sha256": "f590db1da68a5c804efbd74858423c18bea6ea8f126c2864bc622b88ce7368c6"
+    "file": "output/PhoneForm-AI-PC-0.3.1-dev.msi",
+    "bytes": 161128668,
+    "sha256": "09d1c99f79564461986947a0de6f56d7c6de7229475ce45503ba02e8d2c42af1"
   },
-  "regression": "output/validation/0.3.0-regression.json",
-  "recognition": "output/validation/0.3.0-recognition.json",
-  "answerAudit": "output/validation/0.3.0-answer-workbooks.json",
-  "package": "output/validation/0.3.0-package.json",
-  "scope": "Anonymous generated fixtures only; no external original PDFs or old deleted datasets",
-  "releaseAcceptance": "PARTIAL: full manual three-language/DPI and clean-machine matrix remain unverified",
-  "githubReleaseCreated": false,
-  "baselineSummary": "output/validation/build-summary-0.2.0.json",
-  "scale": "output/validation/0.3.0-scale.json",
-  "scaleAnswerAudit": "output/validation/0.3.0-scale-workbooks.json",
-  "cleanup": "output/validation/0.3.0-cleanup.json",
-  "sourceCommit": "1d086b7a864d448d59783db0f77fe68ef30ef79a",
-  "githubVerification": "output/validation/0.3.0-github.json"
+  "regression": "output/validation/0.3.1-regression.json",
+  "readWorkload": "output/validation/0.3.1-query-1000.json",
+  "package": "output/validation/0.3.1-package.json",
+  "scope": "Anonymous generated fixtures only. SQL read workload contains encrypted metadata without physical images. Full regression retains existing answer/provenance/four-sheet assertions. Scale variant is not added to distinct regression count.",
+  "nativeExcelOpened": false,
+  "detectorChanged": false,
+  "databaseSchema": 2,
+  "unverified": [
+    "Actual 0.3.1 GUI/DPI/keyboard/mouse journeys",
+    "Complete manual flow in all three languages",
+    "Clean Windows installation/upgrade and remaining physical-machine failure checks",
+    "Real-scan generalization and independent image/OCR throughput"
+  ],
+  "previousSummary": "output/validation/build-summary-0.3.0.json"
 }

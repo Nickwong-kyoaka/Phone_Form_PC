@@ -46,12 +46,11 @@ internal class DesktopProcessingRepository(private val db: DesktopRepositories) 
 
 internal class DesktopIntelligenceRepository(private val db: DesktopRepositories) : IntelligenceRepository {
     private val profiles = RecognitionProfiles(db)
-    override fun observeReviewSummaries(projectId: String) = db.observe {
-        list<Submission>("submission", projectId).filter { it.currentRevisionId != null && !it.discarded }.sortedBy { it.number }.mapNotNull { s ->
-            review(s.id)?.let { w -> ReviewListSummary(s.id, s.number, w.revision.id, w.revision.missingTemplatePageIds.size, prep(w.revision.id)?.status, w.job?.status, w.confirmation != null,
-                w.confirmation == null && (w.revision.missingTemplatePageIds.isNotEmpty() || prep(w.revision.id)?.status == PreparationJobStatus.FAILED || w.job?.status == RecognitionJobStatus.FAILED || w.job?.observations?.any { it.requiresReview && w.answers?.answers?.any { answer -> answer.targetKey == it.targetKey && answer.humanEdited } != true } == true)) }
-        }
-    }
+    override fun observeReviewSummaries(projectId: String) = db.observe { ListQueries.reviewSummaries(this,projectId) }
+    override suspend fun queryReviewPage(projectId: String, query: ReviewPageQuery) = db.read { ListQueries.reviewPage(this,projectId,query) }
+    override suspend fun getReviewSummary(submissionId: String) = db.read { ListQueries.reviewSummary(this,submissionId) }
+    override suspend fun reviewNeighbors(projectId: String, submissionId: String, query: ReviewPageQuery) = db.read { ListQueries.neighbors(this,projectId,submissionId,query) }
+    override suspend fun unconfirmedRerunTargets(projectId: String) = db.read { ListQueries.rerunTargets(this,projectId) }
     override fun observeAnalysis(draftId: String) = db.observe {
         val run = list<TemplateAnalysisRun>("analysis").filter { it.draftId == draftId }.maxByOrNull { it.createdAtEpochMillis } ?: return@observe null
         val draft = get<TemplateDraft>("template_draft", draftId)
@@ -320,6 +319,7 @@ internal class DesktopIntelligenceRepository(private val db: DesktopRepositories
         put("export", snapshot.id, projectId, snapshot); snapshot
     }
     override fun observeExports(projectId: String) = db.observe { list<ExportSnapshot>("export", projectId).sortedByDescending { it.createdAtEpochMillis } }
+    override fun observeExportSummaries(projectId: String) = db.observe { ListQueries.exports(this,projectId) }
     override suspend fun getExportSnapshot(snapshotId: String) = db.read { get<ExportSnapshot>("export", snapshotId) }
     override suspend fun saveExportArtifact(artifact: ExportArtifact) { db.write {
         val snapshot = requireNotNull(get<ExportSnapshot>("export", artifact.snapshotId)); active(snapshot.projectId)

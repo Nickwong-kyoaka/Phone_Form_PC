@@ -31,6 +31,7 @@ data class ProjectUiState(
     val recognitionPageId: String? = null, val recognitionQuestionId: String? = null,
     val recognitionOptionId: String? = null,
     val recognitionTool:String = "GROUP",
+    val reviewPageIndex: Int = 0, val reviewPageSize: Int = 50,
 )
 
 data class DesktopUiState(
@@ -49,10 +50,14 @@ data class UiTaskSummary(
     val retrySupported: Boolean = false,
 )
 
+internal val pendingTaskStatuses = setOf("QUEUED", "PENDING", "RUNNING", "PAUSED", "BLOCKED")
+internal fun pendingTaskCount(statusCounts: Map<String,Int>): Int = statusCounts.filterKeys { it in pendingTaskStatuses }.values.sum()
+
 internal fun ProjectUiState.normalized() = copy(
     templateInspectorTab = templateInspectorTab.coerceIn(0, 2),
     exportTab = exportTab.coerceIn(0, 2),
     reviewFilter = reviewFilter.takeIf { it in setOf("PENDING", "ALL", "CONFIRMED", "EXCEPTIONS") } ?: "PENDING",
+    reviewPageIndex = reviewPageIndex.coerceAtLeast(0), reviewPageSize = reviewPageSize.takeIf { it in 1..100 } ?: 50,
     paneLeft = if (paneLeft.isFinite()) paneLeft.coerceIn(160f, 360f) else 220f,
     paneRight = if (paneRight.isFinite()) paneRight.coerceIn(280f, 480f) else 340f,
     canvasViews = canvasViews.mapValues { it.value.normalized() },
@@ -80,7 +85,8 @@ internal object DesktopUiCodec {
                     p.text("reviewTargetKey"), p.text("reviewFilter") ?: "PENDING", p.text("reviewSearch") ?: "",
                     p.bool("reviewWorkspace", false), p.int("exportTab", 0), p.text("exportSearch") ?: "",
                     p.float("paneLeft", 220f), p.float("paneRight", 340f), views,
-                    p.text("recognitionPageId"),p.text("recognitionQuestionId"),p.text("recognitionOptionId"),p.text("recognitionTool") ?: "GROUP").normalized()
+                    p.text("recognitionPageId"),p.text("recognitionQuestionId"),p.text("recognitionOptionId"),p.text("recognitionTool") ?: "GROUP",
+                    p.int("reviewPageIndex",0),p.int("reviewPageSize",50)).normalized()
             }.orEmpty()
             defaults.copy(theme = enumValue(json.text("theme"), ThemeMode.LIGHT),
                 section = enumValue(json.text("section"), WorkspaceSection.TEMPLATE),

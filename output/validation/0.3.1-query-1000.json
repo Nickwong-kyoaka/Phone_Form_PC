@@ -1,0 +1,42 @@
+{
+  "version": "0.3.1-dev",
+  "records": 1000,
+  "pagesPerRecord": 10,
+  "targetsPerRecord": 100,
+  "fixtureScope": "Bulk-seeded encrypted record metadata; no image bytes, asset availability, collection throughput, OCR, GUI or workbook measurement",
+  "seedMillis": 3161,
+  "legacyFullWorkspaceSummaryNanos": 5696048100,
+  "firstSqlPageNanos": 1053056901,
+  "searchNanos": [
+    1050444599,
+    978682100,
+    1046273700,
+    919223001,
+    1049811300
+  ],
+  "projectSummaryNanos": 971420800,
+  "taskSummaryNanos": 1291048600,
+  "taskTotal": 2000,
+  "taskRowsReturned": 20,
+  "pageSize": 50,
+  "allRowsVerified": 1000,
+  "reopenAndFirstPageNanos": 1229027499,
+  "peakHeapPoolBytes": 163419080,
+  "encryptedDatabaseBytes": 80363520,
+  "passed": true,
+  "artifactsRetained": 0,
+  "checkedAt": "2026-10-22T16:42:30.0744177+08:00",
+  "command": "PHONEFORM_QUERY_SCALE_COUNT=1000; .\\scripts\\Invoke-Build.ps1 -Tasks ':data:cleanTest',':data:test','--tests','com.phoneform.desktop.data.ReviewQueryPerformanceTest','-Pkotlin.compiler.execution.strategy=in-process'",
+  "fixtureDetails": {
+    "templatePageSlots": 10,
+    "targetsPerSubmission": 100,
+    "missingLastPageSubmissions": 142,
+    "pageRevisionEntries": 9858,
+    "physicalImageFiles": 0,
+    "answerValues": 100000,
+    "recognitionObservationEntries": 100000,
+    "humanAnswersAreAnonymousFixtures": true,
+    "measurementOrder": "Legacy full-workspace summaries first, SQL page next; warm cache, single sample per operation. Heap pools cover the entire workload."
+  },
+  "reportSha256": "b86cc1d3083c29bda9c4304846481a7edb3af878cb2ea73ba8af66f89f3ff0ec"
+}

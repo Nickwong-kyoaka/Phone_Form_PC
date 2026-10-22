@@ -18,8 +18,8 @@ import com.phoneform.ai.core.model.*
     val initial=CalibrationEnvelope(binding,RecognitionProfileDraft("initial:$groupId",draft.projectId,draft.id,
         pageFingerprints=binding.pageFingerprints,settings=questions.map { calibrationSettings(it) }))
     val session="initial-calibration:${draft.id}:$groupId"
-    var envelope by encryptedState(controller,session,draft.projectId,"envelope",initial,
-        {editorJson.fromJson(it,CalibrationEnvelope::class.java)},{editorJson.toJson(it)})
+    val recovery=recoverableEncryptedState(controller,session,draft.projectId,"envelope",initial,::decodeCalibrationRecovery,{editorJson.toJson(it)})
+    var envelope by recovery
     val state by controller.state.collectAsState()
     val bound=envelope.binding==binding
     val selectedState=controller.ui.collectAsState().value.projects[draft.projectId] ?: ProjectUiState()
@@ -31,6 +31,7 @@ import com.phoneform.ai.core.model.*
     val dirty=envelope.draft.settings!=initial.draft.settings || envelope.grids.isNotEmpty()
     fun requestClose(){if(!state.busy){if(dirty || !bound)closePrompt=true else close()}}
     fun commit() {controller.perform {
+        recovery.requireReady()
         require(bound){"RECOGNITION_PAGE_CHANGED"}
         val next=questions.map { q->val s=envelope.draft.settings.single { it.questionId==q.id }
             q.copy(options=q.options.map { o->o.copy(region=s.options.firstOrNull { it.optionId==o.id }?.region ?: o.region) },recognition=s,
@@ -39,6 +40,12 @@ import com.phoneform.ai.core.model.*
         val updatedMatrix=if(matrix!=null && grid!=null)matrix.copy(region=grid.region,rowBoundaries=grid.rows,columnBoundaries=grid.columns)else matrix
         save(next,updatedMatrix);clearEditor(session);close()
     }}
+    if(!recovery.ready) {
+        AppDialog(tr(language,"整組選項與矩陣","整组选项与矩阵","Option group and matrix"),close,width=1180.dp,height=780.dp) {
+            RecoveryLoadProblem(recovery,language){controller.perform {clearEditor(session);recovery.resetAfterDiscard(initial)}}
+        }
+        return
+    }
     AppDialog(tr(language,"整組選項與矩陣","整组选项与矩阵","Option group and matrix"),{requestClose()},width=1180.dp,height=780.dp) {
         RegisterSaveAction(bound && !state.busy){commit()}
         Column(Modifier.fillMaxSize()) {

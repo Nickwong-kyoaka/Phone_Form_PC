@@ -58,7 +58,7 @@ data class ReviewWorkspace(val project: ProjectDetails, val submission: Submissi
 data class OutputFieldPolicy(val projectId: String, val targetKey: String, val personalIdentifier: Boolean, val exportIncluded: Boolean = true)
 data class ReviewListSummary(val submissionId: String, val number: Int, val submissionRevisionId: String,
     val missingPageCount: Int, val preparationStatus: PreparationJobStatus?, val recognitionStatus: RecognitionJobStatus?,
-    val confirmed: Boolean, val hasExceptions: Boolean)
+    val confirmed: Boolean, val hasExceptions: Boolean, val respondentId: String = "")
 class StaleAnswerException : IllegalStateException("Answers or submission changed; reload before saving")
 class ReviewValidationException(val targetKeys: List<String>) : IllegalArgumentException("Resolve all unhandled or invalid answers before confirmation")
 
@@ -76,6 +76,10 @@ data class ExportArtifact(val snapshotId: String, val status: ExportArtifactStat
 
 interface IntelligenceRepository {
     fun observeReviewSummaries(projectId: String): Flow<List<ReviewListSummary>> = flowOf(emptyList())
+    suspend fun queryReviewPage(projectId: String, query: ReviewPageQuery): ReviewPage = throw UnsupportedOperationException()
+    suspend fun getReviewSummary(submissionId: String): ReviewListSummary? = throw UnsupportedOperationException()
+    suspend fun reviewNeighbors(projectId: String, submissionId: String, query: ReviewPageQuery): ReviewNeighbors = throw UnsupportedOperationException()
+    suspend fun unconfirmedRerunTargets(projectId: String): List<RecognitionRerunTarget> = throw UnsupportedOperationException()
     fun observeAnalysis(draftId: String): Flow<TemplateAnalysisRun?>
     suspend fun saveAnalysis(run: TemplateAnalysisRun)
     suspend fun decideSuggestion(draftId: String, suggestionId: String, accept: Boolean): TemplateDraft
@@ -110,6 +114,7 @@ interface IntelligenceRepository {
     suspend fun savePolicy(policy: OutputFieldPolicy)
     suspend fun createExportSnapshot(projectId: String, includeUnresolved: Boolean, operationId: String): ExportSnapshot
     fun observeExports(projectId: String): Flow<List<ExportSnapshot>>
+    fun observeExportSummaries(projectId: String): Flow<List<ExportListSummary>> = throw UnsupportedOperationException()
     suspend fun getExportSnapshot(snapshotId: String): ExportSnapshot?
     suspend fun saveExportArtifact(artifact: ExportArtifact)
     suspend fun getExportArtifact(snapshotId: String): ExportArtifact?

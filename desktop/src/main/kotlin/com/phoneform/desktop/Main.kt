@@ -81,7 +81,7 @@ fun main() {
             Item(tr(language,"退出","退出","Exit"), onClick = { exitSafely() })
         })
     }
-    Window(visible = visible, title = "PhoneForm AI PC · 0.3.0-dev",
+    Window(visible = visible, title = "PhoneForm AI PC · 0.3.1-dev",
         state = rememberWindowState(width = minOf(1280,workArea.width).dp, height = minOf(860,workArea.height-36).dp),
         onCloseRequest = {
             if (snapshot.settings.closeBehavior == CloseBehavior.SYSTEM_TRAY && systemTraySupported) visible = false else exitSafely()

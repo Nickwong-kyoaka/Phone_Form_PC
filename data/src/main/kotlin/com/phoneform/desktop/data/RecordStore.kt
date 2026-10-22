@@ -54,7 +54,9 @@ internal class Records(val connection: Connection) {
     }
     fun project(id: String): ProjectDetails? = get("project", id)
     fun requireProject(id: String): ProjectDetails { active(id); return requireNotNull(project(id)) { "PROJECT_NOT_FOUND" } }
-    fun locked(id: String): Boolean = list<Submission>("submission", id).any { !it.discarded }
+    fun locked(id: String): Boolean = connection.prepareStatement("SELECT EXISTS(SELECT 1 FROM pc_records WHERE kind='submission' AND project_id=? AND coalesce(json_extract(payload,'$.discarded'),0)=0)").use {
+        it.setString(1,id);it.executeQuery().use { rows -> rows.next();rows.getInt(1)==1 }
+    }
     fun draft(id: String): TemplateDraft? = list<TemplateDraft>("template_draft", id).singleOrNull()
     fun collection(id: String) = (get<ProjectCollectionState>("collection", id) ?: ProjectCollectionState(id)).copy(locked = locked(id))
     fun wake(id: String) { val state = collection(id); put("collection", id, id, state.copy(wakeGeneration = state.wakeGeneration + 1)) }
@@ -136,6 +138,7 @@ class DesktopRepositories(val workspace: SecureWorkspace) {
     suspend fun loadEditorSession(id: String) = editors.read(id)
     suspend fun discardEditorSession(id: String) = editors.delete(id)
     suspend fun storageUsage() = maintenance.storageUsage()
+    suspend fun taskSummaries(limit: Int = 200): BackgroundTaskPage = read { ListQueries.tasks(this,limit) }
     suspend fun deleteProjects(ids: Set<String>, operationId: String): List<ProjectDeletionStatus> {
         require(operationId.isNotBlank())
         write {

@@ -6,23 +6,7 @@ internal class DesktopProjectRepository(private val db: DesktopRepositories) : P
     override fun observeProjects() = db.observe { list<ProjectDetails>("project").filter { get<ProjectDeletionStatus>("deletion", it.project.id) == null }.map { it.project }.sortedByDescending { it.updatedAtEpochMillis } }
     override fun observeProject(id: String) = db.observe { project(id) }
     override suspend fun getProject(id: String) = db.read { project(id) }
-    override fun observeProjectSummaries() = db.observe {
-        list<ProjectDetails>("project").filter { get<ProjectDeletionStatus>("deletion", it.project.id) == null }.sortedByDescending { it.project.updatedAtEpochMillis }.map { details ->
-            val id = details.project.id; val submissions = list<Submission>("submission", id).filterNot { it.discarded }
-            val submitted = submissions.filter { it.currentRevisionId != null }
-            val preparation = list<ProcessingJob>("preparation", id).filter { p -> submitted.any { it.currentRevisionId == p.submissionRevisionId } }
-            val recognition = submitted.mapNotNull { s -> s.currentRevisionId?.let { recognition(it) } }
-            val confirmed = submitted.filter { s -> latestAnswers(s.currentRevisionId!!)?.let { a -> confirmationForAnswer(a.id) != null } == true }.map { it.currentRevisionId }.toSet()
-            val prepByRevision = preparation.associateBy { it.submissionRevisionId }
-            val recognitionByRevision = recognition.associateBy { it.submissionRevisionId }
-            ProjectListSummary(details.project, submitted.size, list<SubmissionDraft>("submission_draft", id).size,
-                submitted.count { get<SubmissionRevision>("revision", it.currentRevisionId!!)?.missingTemplatePageIds?.isNotEmpty() == true },
-                submitted.count { s -> prepByRevision[s.currentRevisionId]?.status in listOf(PreparationJobStatus.QUEUED, PreparationJobStatus.RUNNING, PreparationJobStatus.PAUSED) || recognitionByRevision[s.currentRevisionId]?.status in listOf(RecognitionJobStatus.QUEUED, RecognitionJobStatus.RUNNING, RecognitionJobStatus.PAUSED) },
-                recognition.count { it.status == RecognitionJobStatus.READY && it.submissionRevisionId !in confirmed },
-                confirmed.size,
-                submitted.count { s -> prepByRevision[s.currentRevisionId]?.status == PreparationJobStatus.FAILED || recognitionByRevision[s.currentRevisionId]?.status == RecognitionJobStatus.FAILED })
-        }
-    }
+    override fun observeProjectSummaries() = db.observe { ListQueries.projects(this) }
     override suspend fun saveProject(details: ProjectDetails) { db.write { persist(details, false, false) } }
     override suspend fun saveProjectSection(details: ProjectDetails, section: ProjectEditSection, expectedOutputVersion: Int?) = db.write {
         val current = requireProject(details.project.id)

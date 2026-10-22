@@ -53,9 +53,9 @@ private data class CalibrationDrag(val kind:String,val index:Int,val start:Offse
     DisposableEffect(page.id) { onDispose { saveView() } }
     Column(modifier) {
         Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal=4.dp),verticalAlignment=Alignment.CenterVertically) {
-            TextButton(onClick={zoom=(zoom/1.25f).coerceAtLeast(.5f);saveView()}){Text("−")}
+            TextButton(onClick={zoom=CanvasLimits.zoom(zoom/1.25f);saveView()}){Text("−")}
             Text("${(zoom*100).toInt()}%",style=MaterialTheme.typography.labelSmall)
-            TextButton(onClick={zoom=(zoom*1.25f).coerceAtMost(8f);saveView()}){Text("+")}
+            TextButton(onClick={zoom=CanvasLimits.zoom(zoom*1.25f);saveView()}){Text("+")}
             TextButton(onClick={zoom=1f;offset=Offset.Zero;saveView()}){Text(tr(language,"適合","适合","Fit"))}
             CalibrationTool.entries.forEach { value->TextButton(onClick={tool=value;if(projectId!=null)controller.updateProjectUi(projectId){it.copy(recognitionTool=value.name)}},enabled=enabled || value==CalibrationTool.PAN,
                 colors=ButtonDefaults.textButtonColors(contentColor=if(tool==value)MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)) {

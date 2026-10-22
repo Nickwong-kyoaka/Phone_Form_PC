@@ -5,6 +5,15 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class DataPresentationTest {
+    @Test fun blockedTasksRemainVisibleInDefaultTaskFilterAndFullCounts() {
+        assertTrue("BLOCKED" in pendingTaskStatuses)
+        assertFalse("READY" in pendingTaskStatuses)
+        // The status bar uses totals, even when only a bounded task batch is loaded.
+        assertEquals(265,pendingTaskCount(mapOf("QUEUED" to 230,"RUNNING" to 1,"PAUSED" to 4,"BLOCKED" to 30,"FAILED" to 10,"READY" to 1000)))
+        assertEquals("需要確認辨識設定",taskStatus(UiLanguage.TRADITIONAL,"BLOCKED"))
+        assertEquals("需要确认识别设置",taskStatus(UiLanguage.SIMPLIFIED,"BLOCKED"))
+        assertEquals("Recognition settings required",taskStatus(UiLanguage.ENGLISH,"BLOCKED"))
+    }
     @Test fun columnMoveRetainsHiddenAliasesAndNeverMovesFixedColumns() {
         val original = listOf(OutputColumnLayout("hidden", "Private alias", 8), OutputColumnLayout("first", "Exact alias", 0))
         val preview = listOf(OutputColumn("submission_id", "Number"), OutputColumn("respondent_id", "Paper ID"), OutputColumn("first", "Exact alias"), OutputColumn("second", "Second"))

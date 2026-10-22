@@ -157,8 +157,7 @@ fun formatTime(time:Long):String=DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
     }
 }
 @Composable private fun StatusBar(controller:Controller,state:AppSnapshot,language:UiLanguage,onTasks:()->Unit) {
-    val tasks by controller.tasks.collectAsState()
-    val active=tasks.count {it.status in setOf("QUEUED","PENDING","RUNNING","PAUSED")}
+    val active=pendingTaskCount(state.taskStatusCounts)
     HorizontalDivider(color=MaterialTheme.colorScheme.outlineVariant)
     Row(Modifier.fillMaxWidth().height(30.dp).background(MaterialTheme.colorScheme.surface).padding(horizontal=16.dp),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(12.dp)) {
         Text(when(state.editorSaveState) {

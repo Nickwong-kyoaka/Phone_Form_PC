@@ -208,16 +208,16 @@ import java.util.Locale
                     OutlinedButton(onClick = { controller.perform {
                         usage = repositories.storageUsage()
                         val runtime = vision.initialize()
-                        val knownStates = setOf("QUEUED", "RUNNING", "PAUSED", "FAILED", "READY", "SUPERSEDED")
-                        val counts = tasks.value.filter { it.phase in setOf("IMAGE", "PREPARATION", "RECOGNITION") && it.status in knownStates }.groupingBy { "${it.phase}_${it.status}" }.eachCount()
+                        val knownStates = setOf("QUEUED", "RUNNING", "PAUSED", "BLOCKED", "FAILED", "READY", "SUPERSEDED")
+                        val counts = state.taskStatusCounts.filterKeys { it in knownStates }
                         val safeReport = linkedMapOf<String, Any>(
-                            "application" to "PhoneForm AI PC", "version" to "0.3.0-dev",
+                            "application" to "PhoneForm AI PC", "version" to "0.3.1-dev",
                             "os" to System.getProperty("os.name"), "osVersion" to System.getProperty("os.version"),
                             "architecture" to System.getProperty("os.arch"), "javaVersion" to System.getProperty("java.version"),
                             "ocrAvailable" to runtime.ocrAvailable, "openCvAvailable" to runtime.openCvAvailable,
                             "missingModels" to runtime.missingModels.filter { it in setOf("eng", "chi_sim", "chi_tra") },
                             "errorCodes" to runtime.errorCodes.filter { it in setOf("OPENCV_UNAVAILABLE", "OCR_NATIVE_UNAVAILABLE", "OCR_MODELS_MISSING") },
-                            "projectCount" to state.projects.size, "taskCounts" to counts,
+                            "projectCount" to state.projects.size, "taskCounts" to counts, "taskTotal" to state.taskTotal,
                             "storageBytes" to mapOf("total" to usage!!.totalBytes, "database" to usage!!.databaseBytes, "original" to usage!!.originalBytes,
                                 "derived" to usage!!.derivedBytes, "export" to usage!!.exportBytes, "temporary" to usage!!.temporaryBytes))
                         report = GsonBuilder().setPrettyPrinting().create().toJson(safeReport); saved = false
@@ -232,7 +232,7 @@ import java.util.Locale
                 }
                 3 -> {
                     Text("PhoneForm AI PC", style = MaterialTheme.typography.headlineSmall)
-                    StatusBadge("0.3.0-dev")
+                    StatusBadge("0.3.1-dev")
                     Text(tr(language, "Windows 離線問卷辨識與人工覆核", "Windows 离线问卷识别与人工复核", "Offline questionnaire recognition and review for Windows"))
                     Text(tr(language, "PDF、JPG、PNG → 本地處理 → 人工覆核 → Excel 四表輸出。", "PDF、JPG、PNG → 本地处理 → 人工复核 → Excel 四表导出。", "PDF, JPG, PNG → local processing → human review → four-sheet Excel export."), color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Text(tr(language, "內部試用版本。資料保存在目前 Windows 使用者的加密儲存空間。", "内部试用版本。数据保存在当前 Windows 用户的加密存储中。", "Internal preview. Data is kept in encrypted storage for the current Windows user."), color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -266,6 +266,7 @@ fun taskStatus(language: UiLanguage, status: String): String = when (status) {
     "QUEUED" -> tr(language, "排隊中", "排队中", "Queued")
     "RUNNING" -> tr(language, "處理中", "处理中", "Running")
     "PAUSED" -> tr(language, "已暫停", "已暂停", "Paused")
+    "BLOCKED" -> tr(language, "需要確認辨識設定", "需要确认识别设置", "Recognition settings required")
     "FAILED" -> tr(language, "失敗", "失败", "Failed")
     "READY" -> tr(language, "已完成", "已完成", "Completed")
     "SUPERSEDED" -> tr(language, "已被新修訂取代", "已被新修订替代", "Superseded")
@@ -278,7 +279,9 @@ fun taskStatus(language: UiLanguage, status: String): String = when (status) {
     var tab by remember { mutableStateOf(0) }
     var search by remember { mutableStateOf("") }
     var details by remember { mutableStateOf<String?>(null) }
-    val active = setOf("QUEUED", "RUNNING", "PAUSED")
+    val active = pendingTaskStatuses
+    val activeCount = pendingTaskCount(state.taskStatusCounts)
+    val failedCount = state.taskStatusCounts["FAILED"] ?: 0
     val visible = tasks.filter { task ->
         (when (tab) { 0 -> task.status in active; 1 -> task.status == "FAILED"; 2 -> task.status == "READY"; else -> true }) &&
             (search.isBlank() || task.projectName.contains(search, true) || taskPhase(language, task.phase).contains(search, true) || task.submissionNumber?.toString()?.contains(search) == true)
@@ -286,11 +289,16 @@ fun taskStatus(language: UiLanguage, status: String): String = when (status) {
     val dismiss = safeDialogClose(controller, close)
     AppDialog(tr(language, "任務中心", "任务中心", "Task center"), dismiss, width = 980.dp, height = 720.dp) {
         WorkspaceToolbar(tr(language, "任務中心", "任务中心", "Task center"),
-            tr(language, "${tasks.count { it.status in active }} 項進行中 · ${tasks.count { it.status == "FAILED" }} 項失敗", "${tasks.count { it.status in active }} 项进行中 · ${tasks.count { it.status == "FAILED" }} 项失败", "${tasks.count { it.status in active }} active · ${tasks.count { it.status == "FAILED" }} failed")) {
+            tr(language, "$activeCount 項待處理 · $failedCount 項失敗", "$activeCount 项待处理 · $failedCount 项失败", "$activeCount pending / action needed · $failedCount failed")) {
             OutlinedButton(onClick = controller::togglePaused) { Text(if (state.paused) tr(language, "繼續處理", "继续处理", "Resume processing") else tr(language, "暫停處理", "暂停处理", "Pause processing")) }
         }
-        InspectorTabs(listOf(tr(language, "進行中", "进行中", "Active"), tr(language, "失敗", "失败", "Failed"), tr(language, "已完成", "已完成", "Completed"), tr(language, "全部", "全部", "All")), tab) { tab = it }
+        InspectorTabs(listOf(tr(language, "待處理", "待处理", "Pending / action needed"), tr(language, "失敗", "失败", "Failed"), tr(language, "已完成", "已完成", "Completed"), tr(language, "全部", "全部", "All")), tab) { tab = it }
         DialogProblem(state, language)
+        if (state.taskTotal > tasks.size) Text(tr(language,
+            "顯示前 ${tasks.size} 項，共 ${state.taskTotal} 項；搜尋與篩選只套用於這批任務。",
+            "显示前 ${tasks.size} 项，共 ${state.taskTotal} 项；搜索与筛选仅适用于这批任务。",
+            "Showing the first ${tasks.size} of ${state.taskTotal} tasks. Search and filters apply to this displayed batch."),
+            Modifier.padding(horizontal=20.dp,vertical=8.dp),style=MaterialTheme.typography.bodySmall)
         OutlinedTextField(search, { search = it }, label = { Text(tr(language, "搜尋專案或問卷編號", "搜索项目或问卷编号", "Search project or submission number")) }, singleLine = true, modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 12.dp))
         if (visible.isEmpty()) Box(Modifier.weight(1f).fillMaxWidth()) {
             EmptyState(tr(language, "沒有符合條件的任務", "没有符合条件的任务", "No matching tasks"),

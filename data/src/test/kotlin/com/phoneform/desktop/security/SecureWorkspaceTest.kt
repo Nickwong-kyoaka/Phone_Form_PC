@@ -24,10 +24,12 @@ class SecureWorkspaceTest {
     @Test fun encryptedDatabaseAndStreamingAssetsReopenWithoutPlaintext() {
         val root = temporary.newFolder().toPath()
         val sentinel = "private-questionnaire-001-繁體-SENTINEL"
+        // Business payloads are JSON; keep the confidentiality sentinel inside the indexed project shape.
+        val recordPayload = """{"project":{"name":"$sentinel","updatedAtEpochMillis":1}}"""
         val payload = (sentinel.repeat(70000)).toByteArray()
         SecureWorkspace.open(root, protector).use { workspace ->
             workspace.database.transaction { db -> db.prepareStatement("INSERT INTO pc_records VALUES(?,?,?,?)").use {
-                it.setString(1, "project"); it.setString(2, "001"); it.setString(3, "001"); it.setString(4, sentinel); it.executeUpdate()
+                it.setString(1, "project"); it.setString(2, "001"); it.setString(3, "001"); it.setString(4, recordPayload); it.executeUpdate()
             } }
             val info = workspace.assets.put("sample_assets/test.bin", ByteArrayInputStream(payload))
             assertEquals(payload.size.toLong(), info.byteCount)
@@ -47,7 +49,7 @@ class SecureWorkspaceTest {
         } }
         SecureWorkspace.open(root, protector).use { workspace ->
             assertArrayEquals(payload, workspace.assets.readBytes("sample_assets/test.bin"))
-            assertEquals(sentinel, workspace.database.read { db -> db.createStatement().use { statement ->
+            assertEquals(recordPayload, workspace.database.read { db -> db.createStatement().use { statement ->
                 statement.executeQuery("SELECT payload FROM pc_records").use { it.next(); it.getString(1) }
             } })
         }

@@ -31,6 +31,7 @@ import java.time.format.DateTimeFormatter
     val desktopUi by controller.ui.collectAsState()
     val ui = desktopUi.projects[projectId] ?: ProjectUiState()
     val template = state.template
+    val submittedCount = state.projects.firstOrNull { it.project.id == projectId }?.submittedCount ?: 0
     var file by remember(projectId) { mutableStateOf<File?>(null) }
     val draft = state.drafts.firstOrNull { it.id == ui.collectionDraftId }
         ?: state.drafts.firstOrNull { it.baseRevisionId == null } ?: state.drafts.firstOrNull()
@@ -61,7 +62,7 @@ import java.time.format.DateTimeFormatter
     }
     Column(Modifier.fillMaxSize()) {
         WorkspaceToolbar(tr(language,"匯入問卷","导入问卷","Import questionnaires"),
-            tr(language,"已提交 ${state.submissions.count { it.currentRevisionId != null }} 份 · 每次匯入一份","已提交 ${state.submissions.count { it.currentRevisionId != null }} 份 · 每次导入一份","${state.submissions.count { it.currentRevisionId != null }} submitted · one questionnaire per import")) {
+            tr(language,"已提交 $submittedCount 份 · 每次匯入一份","已提交 $submittedCount 份 · 每次导入一份","$submittedCount submitted · one questionnaire per import")) {
             if (state.drafts.size > 1) {
                 var expanded by remember { mutableStateOf(false) }
                 Box {
@@ -175,63 +176,77 @@ import java.time.format.DateTimeFormatter
     val ui = desktopUi.projects[projectId] ?: ProjectUiState()
     val searchFocus = remember { FocusRequester() }
     if (!ui.reviewWorkspace) RegisterSearchAction { searchFocus.requestFocus() }
-    val submissionsById = remember(state.submissions) { state.submissions.associateBy { it.id } }
-    val orderedSummaries = remember(state.reviews) { state.reviews.sortedBy { it.number } }
-    val summaries = remember(orderedSummaries, submissionsById, ui.reviewFilter, ui.reviewSearch) {
-        orderedSummaries.filter { summary ->
-            val filterMatch = when (ui.reviewFilter) { "CONFIRMED" -> summary.confirmed; "EXCEPTIONS" -> summary.hasExceptions || summary.missingPageCount > 0; "ALL" -> true; else -> !summary.confirmed }
-            val submission = submissionsById[summary.submissionId]
-            filterMatch && (ui.reviewSearch.isBlank() || summary.number.toString().contains(ui.reviewSearch.trim(), true) || submission?.respondentId.orEmpty().contains(ui.reviewSearch.trim(), true))
-        }
-    }
+    val pageState by controller.reviewPage.collectAsState()
+    val listState = pageState.takeIf { it.projectId == projectId }
+    val page = listState?.page
+    val summaries = page?.items.orEmpty()
+    val pageInteractive = listState != null && !listState.loading && !listState.stale && listState.error == null
     val activeId = ui.reviewSubmissionId
     var recognitionSettings by remember(projectId){mutableStateOf(false)}
-    var rerunIds by remember(projectId){mutableStateOf<List<String>?>(null)}
+    var rerunTargets by remember(projectId){mutableStateOf<List<RecognitionRerunTarget>?>(null)}
     var rerunMessage by remember(projectId){mutableStateOf<String?>(null)}
     if(recognitionSettings && state.template!=null)RecognitionSettingsDialog(controller,state.template,language,{recognitionSettings=false})
-    rerunIds?.let { ids->AlertDialog(onDismissRequest={rerunIds=null},title={Text(tr(language,"重新辨識未確認問卷","重新识别未确认问卷","Rerun unconfirmed questionnaires"))},
-        text={Text(tr(language,"將檢查 ${ids.size} 份目前未確認問卷，使用已確認的辨識設定。已確認、修訂已變更或不適用的項目會略過；人工答案仍保留。","将检查 ${ids.size} 份当前未确认问卷，使用已确认的识别设置。已确认、修订已变更或不适用项目会跳过；人工答案仍保留。","Check ${ids.size} currently unconfirmed questionnaires using confirmed settings. Confirmed, changed or ineligible records are skipped. Human answers are retained."))},
-        confirmButton={Button(onClick={rerunIds=null;controller.perform {
+    rerunTargets?.let { targets->AlertDialog(onDismissRequest={rerunTargets=null},title={Text(tr(language,"重新辨識未確認問卷","重新识别未确认问卷","Rerun unconfirmed questionnaires"))},
+        text={Text(tr(language,"將檢查 ${targets.size} 份目前未確認問卷，使用已確認的辨識設定。已確認、修訂或目前任務已變更的項目會略過；人工答案仍保留。","将检查 ${targets.size} 份当前未确认问卷，使用已确认的识别设置。已确认、修订或当前任务已变更的项目会跳过；人工答案仍保留。","Check ${targets.size} currently unconfirmed questionnaires using confirmed settings. Confirmed records or changed revisions/jobs are skipped. Human answers are retained."))},
+        confirmButton={Button(onClick={rerunTargets=null;controller.perform {
             var queued=0;var skipped=0;var reason:String?=null
-            for(id in ids)try{rerunRecognition(id);queued++}catch(e:kotlinx.coroutines.CancellationException){throw e}catch(e:Exception){skipped++;reason=reason ?: Controller.errorCode(e)}
+            for(target in targets)try{rerunRecognition(target);queued++}catch(e:kotlinx.coroutines.CancellationException){throw e}catch(e:Exception){skipped++;reason=reason ?: Controller.errorCode(e)}
             rerunMessage=tr(language,"已排隊 $queued 份，略過 $skipped 份。任務詳情可在任務面板查看。","已排队 $queued 份，跳过 $skipped 份。任务详情可在任务面板查看。","Queued $queued; skipped $skipped. Check the task panel for details.")+(reason?.let {" "+message(language,it)} ?: "")
-        }}){Text(tr(language,"開始重新辨識","开始重新识别","Start rerun"))}},dismissButton={TextButton(onClick={rerunIds=null}){Text(tr(language,"取消","取消","Cancel"))}}) }
+        }}){Text(tr(language,"開始重新辨識","开始重新识别","Start rerun"))}},dismissButton={TextButton(onClick={rerunTargets=null}){Text(tr(language,"取消","取消","Cancel"))}}) }
     var workspace by remember(projectId) { mutableStateOf<ReviewWorkspace?>(null) }
     var loadError by remember(projectId) { mutableStateOf(false) }
     var loading by remember(projectId) { mutableStateOf(false) }
     var reload by remember(projectId) { mutableStateOf(0) }
     var invalidKeys by remember(projectId) { mutableStateOf<List<String>?>(null) }
-    LaunchedEffect(activeId, state.reviews, state.busy, reload, ui.reviewWorkspace) {
-        if (!ui.reviewWorkspace || activeId == null) { workspace = null; loading = false }
+    var selectedSummary by remember(projectId) { mutableStateOf<ReviewListSummary?>(null) }
+    var neighbors by remember(projectId) { mutableStateOf(ReviewNeighbors()) }
+    var loadGeneration by remember(projectId) { mutableStateOf(0) }
+    LaunchedEffect(activeId, state.dataRevision, reload, ui.reviewWorkspace, ui.reviewSearch, ui.reviewFilter) {
+        val ticket = ++loadGeneration
+        if (!ui.reviewWorkspace || activeId == null) { workspace = null; selectedSummary = null; neighbors = ReviewNeighbors(); loading = false }
         else {
             loading = true; loadError = false
-            try { workspace = withContext(Dispatchers.IO) { controller.repositories.intelligence.getReview(activeId) } }
-            catch (e: Exception) { if (e is kotlinx.coroutines.CancellationException) throw e; workspace = null; loadError = true }
-            finally { loading = false }
+            try {
+                val loaded = withContext(Dispatchers.IO) {
+                    Triple(controller.repositories.intelligence.getReview(activeId),
+                        controller.repositories.intelligence.getReviewSummary(activeId),
+                        controller.repositories.intelligence.reviewNeighbors(projectId, activeId, ui.reviewQuery()))
+                }
+                if (ticket == loadGeneration) { workspace = loaded.first; selectedSummary = loaded.second; neighbors = loaded.third }
+            }
+            catch (e: Exception) { if (e is kotlinx.coroutines.CancellationException) throw e; if (ticket == loadGeneration) { workspace = null; selectedSummary = null; loadError = true } }
+            finally { if (ticket == loadGeneration) loading = false }
         }
     }
     fun open(id: String) { controller.updateProjectUi(projectId) { it.copy(reviewSubmissionId = id, reviewTargetKey = null, reviewWorkspace = true) } }
     if (!ui.reviewWorkspace) {
         Column(Modifier.fillMaxSize()) {
             WorkspaceToolbar(tr(language,"人工覆核","人工复核","Review questionnaires"), tr(language,"選擇一份問卷，逐題核對證據與答案。","选择一份问卷，逐题核对证据和答案。","Open a questionnaire to check its evidence and answers.")) {
-                Text("${state.reviews.count { !it.confirmed }} " + tr(language,"份待覆核","份待复核","pending"), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(if(page==null)tr(language,"正在讀取…","正在读取…","Loading…") else "${page.pendingCount} " + tr(language,"份待覆核","份待复核","pending"), color = MaterialTheme.colorScheme.onSurfaceVariant)
                 OutlinedButton(onClick={recognitionSettings=true},enabled=state.template!=null && !state.busy){Text(tr(language,"辨識設定","识别设置","Recognition settings"))}
-                OutlinedButton(onClick={rerunIds=orderedSummaries.filterNot {it.confirmed}.map {it.submissionId}},enabled=!state.busy && orderedSummaries.any {!it.confirmed}){Text(tr(language,"重跑未確認","重跑未确认","Rerun unconfirmed"))}
+                OutlinedButton(onClick={controller.perform { rerunTargets=repositories.intelligence.unconfirmedRerunTargets(projectId) }},enabled=!state.busy && (page?.pendingCount ?: 0)>0){Text(tr(language,"重跑全部未確認","重跑全部未确认","Rerun all unconfirmed"))}
             }
             rerunMessage?.let {Text(it,Modifier.padding(horizontal=20.dp,vertical=8.dp),style=MaterialTheme.typography.bodySmall)}
             Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 12.dp), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                OutlinedTextField(ui.reviewSearch, { text -> controller.updateProjectUi(projectId) { it.copy(reviewSearch = text) } },
+                OutlinedTextField(ui.reviewSearch, { text -> controller.updateProjectUi(projectId) { it.copy(reviewSearch = text, reviewSubmissionId = null) } },
                     placeholder = { Text(tr(language,"搜尋問卷編號或紙面編號","搜索问卷编号或纸面编号","Search number or paper ID")) }, singleLine = true, modifier = Modifier.weight(1f).focusRequester(searchFocus))
                 var expanded by remember { mutableStateOf(false) }
                 Box {
                     OutlinedButton(onClick = { expanded = true }) { Text(reviewFilterLabel(ui.reviewFilter, language)) }
                     DropdownMenu(expanded, { expanded = false }) { listOf("PENDING", "ALL", "CONFIRMED", "EXCEPTIONS").forEach { filter ->
-                        DropdownMenuItem(text = { Text(reviewFilterLabel(filter, language)) }, onClick = { expanded = false; controller.updateProjectUi(projectId) { it.copy(reviewFilter = filter) } })
+                        DropdownMenuItem(text = { Text(reviewFilterLabel(filter, language)) }, onClick = { expanded = false; controller.updateProjectUi(projectId) { it.copy(reviewFilter = filter, reviewSubmissionId = null) } })
                     } }
                 }
             }
-            if (summaries.isEmpty()) EmptyState(if (state.reviews.isEmpty()) tr(language,"尚未有已提交問卷","尚无已提交问卷","No submitted questionnaires") else tr(language,"沒有符合條件的問卷","没有符合条件的问卷","No matching questionnaires"),
-                if (state.reviews.isEmpty()) tr(language,"提交問卷後，即可在此人工覆核。","提交问卷后，即可在此人工复核。","Submit a questionnaire to begin reviewing.") else tr(language,"更改搜尋文字或篩選條件。","更改搜索文字或筛选条件。","Change the search or filter to see more questionnaires."))
+            if (listState?.loading == true) LinearProgressIndicator(Modifier.fillMaxWidth())
+            if (listState?.error != null) Row(Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.errorContainer).padding(horizontal=20.dp,vertical=8.dp), verticalAlignment=Alignment.CenterVertically) {
+                Text(tr(language,"讀取失敗，顯示的舊結果暫不可操作。請重試。","读取失败，显示的旧结果暂不可操作。请重试。","Loading failed. Previous results are temporarily unavailable for actions. Retry."),Modifier.weight(1f),style=MaterialTheme.typography.bodySmall)
+                TextButton(onClick=controller::retryReviewPage){Text(tr(language,"重試","重试","Retry"))}
+            }
+            if (summaries.isEmpty()) Box(Modifier.weight(1f)) { if (listState==null || listState.loading) Box(Modifier.fillMaxSize(),contentAlignment=Alignment.Center){CircularProgressIndicator()}
+                else if(listState.error!=null) EmptyState(tr(language,"未能讀取問卷列表","未能读取问卷列表","Questionnaire list could not be loaded"),tr(language,"請使用上方重試；搜尋及篩選條件已保留。","请使用上方重试；搜索及筛选条件已保留。","Retry above. Your search and filters are retained."))
+                else EmptyState(if (page?.totalSubmitted == 0) tr(language,"尚未有已提交問卷","尚无已提交问卷","No submitted questionnaires") else tr(language,"沒有符合條件的問卷","没有符合条件的问卷","No matching questionnaires"),
+                if (page?.totalSubmitted == 0) tr(language,"提交問卷後，即可在此人工覆核。","提交问卷后，即可在此人工复核。","Submit a questionnaire to begin reviewing.") else tr(language,"更改搜尋文字或篩選條件。","更改搜索文字或筛选条件。","Change the search or filter to see more questionnaires.")) }
             else BoxWithConstraints(Modifier.weight(1f).padding(horizontal = 20.dp)) {
                 val width = maxOf(maxWidth, 800.dp)
                 Column(Modifier.fillMaxSize().horizontalScroll(rememberScrollState())) {
@@ -246,29 +261,36 @@ import java.time.format.DateTimeFormatter
                             Spacer(Modifier.width(72.dp))
                         }
                         LazyColumn(Modifier.weight(1f)) { items(summaries, key = { it.submissionId }) { summary ->
-                            val submission = submissionsById[summary.submissionId]
                             Row(Modifier.fillMaxWidth().heightIn(min = 52.dp).background(if (activeId == summary.submissionId) MaterialTheme.colorScheme.primaryContainer.copy(alpha = .42f) else MaterialTheme.colorScheme.surface)
-                                .combinedClickable(onClick = { controller.updateProjectUi(projectId) { it.copy(reviewSubmissionId = summary.submissionId) } }, onDoubleClick = { open(summary.submissionId) })
-                                .onPreviewKeyEvent { event -> if (event.type == KeyEventType.KeyDown && event.key == Key.Enter) { open(summary.submissionId); true } else false }.focusable().padding(horizontal = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+                                .combinedClickable(enabled=pageInteractive,onClick = { controller.updateProjectUi(projectId) { it.copy(reviewSubmissionId = summary.submissionId) } }, onDoubleClick = { open(summary.submissionId) })
+                                .onPreviewKeyEvent { event -> if (pageInteractive && event.type == KeyEventType.KeyDown && event.key == Key.Enter) { open(summary.submissionId); true } else false }.focusable().padding(horizontal = 12.dp), verticalAlignment = Alignment.CenterVertically) {
                                 TableCell(summary.number.toString(), Modifier.width(88.dp))
-                                TableCell(submission?.respondentId?.ifBlank { "—" } ?: "—", Modifier.weight(1f))
+                                TableCell(summary.respondentId.ifBlank { "—" }, Modifier.weight(1f))
                                 TableCell(if (summary.missingPageCount > 0) tr(language,"缺 ${summary.missingPageCount} 頁","缺 ${summary.missingPageCount} 页","${summary.missingPageCount} missing") else tr(language,"完整","完整","Complete"), Modifier.width(100.dp))
                                 TableCell(preparationLabel(summary.preparationStatus, language), Modifier.width(138.dp))
                                 TableCell(recognitionLabel(summary.recognitionStatus, language), Modifier.width(138.dp))
                                 Box(Modifier.width(118.dp)) { StatusLabel(if (summary.confirmed) tr(language,"已確認","已确认","Confirmed") else tr(language,"待覆核","待复核","Pending"), summary.confirmed) }
-                                TextButton(onClick = { open(summary.submissionId) }, modifier = Modifier.width(72.dp)) { Text(tr(language,"打開","打开","Open")) }
+                                TextButton(onClick = { open(summary.submissionId) }, enabled=pageInteractive,modifier = Modifier.width(72.dp)) { Text(tr(language,"打開","打开","Open")) }
                             }
                             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = .55f))
                         } }
                     }
                 }
             }
-            Text(tr(language,"共 ${summaries.size} 份 · 雙擊或按 Enter 打開","共 ${summaries.size} 份 · 双击或按 Enter 打开","${summaries.size} questionnaires · double-click or press Enter to open"), Modifier.padding(20.dp, 12.dp), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Row(Modifier.fillMaxWidth().padding(20.dp,8.dp),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(12.dp)) {
+                val offset=(page?.query?.pageIndex ?: 0)*(page?.query?.pageSize ?: 50)
+                val first=if(summaries.isEmpty())0 else offset+1
+                val last=offset+summaries.size
+                Text(if(page==null)"—" else tr(language,"第 $first–$last 份，共 ${page.totalMatched} 份","第 $first–$last 份，共 ${page.totalMatched} 份","$first–$last of ${page.totalMatched}"),Modifier.weight(1f),style=MaterialTheme.typography.bodySmall)
+                OutlinedButton(onClick={controller.changeReviewPage((page?.query?.pageIndex ?: 0)-1)},enabled=pageInteractive && (page?.query?.pageIndex ?: 0)>0){Text(tr(language,"上一頁","上一页","Previous page"))}
+                OutlinedButton(onClick={controller.changeReviewPage((page?.query?.pageIndex ?: 0)+1)},enabled=pageInteractive && last<(page?.totalMatched ?: 0)){Text(tr(language,"下一頁","下一页","Next page"))}
+            }
+            Text(tr(language,"每頁 ${ui.reviewPageSize} 份 · 選取限本頁 · 雙擊或 Enter 打開","每页 ${ui.reviewPageSize} 份 · 选择限本页 · 双击或 Enter 打开","${ui.reviewPageSize} per page · selection is limited to this page · double-click or Enter to open"),Modifier.padding(start=20.dp,end=20.dp,bottom=8.dp),style=MaterialTheme.typography.bodySmall,color=MaterialTheme.colorScheme.onSurfaceVariant)
         }
         return
     }
     val review = workspace?.takeIf { it.submission.id == activeId }
-    val imagesReady = state.reviews.firstOrNull { it.submissionId == activeId }?.preparationStatus == PreparationJobStatus.READY
+    val imagesReady = selectedSummary?.takeIf { it.submissionId == activeId }?.preparationStatus == PreparationJobStatus.READY
     var editorDirty by remember(activeId, review?.revision?.id, review?.answers?.version) { mutableStateOf(false) }
     var saveCurrent by remember(activeId, review?.revision?.id, review?.answers?.version) { mutableStateOf<(() -> Unit)?>(null) }
     var pendingRecoveryKeys by remember(activeId, review?.revision?.id, review?.answers?.version) { mutableStateOf<List<String>>(emptyList()) }
@@ -303,10 +325,8 @@ import java.time.format.DateTimeFormatter
         WorkspaceToolbar(review?.let { tr(language,"第 ${it.submission.number} 份問卷","第 ${it.submission.number} 份问卷","Questionnaire ${it.submission.number}") } ?: tr(language,"人工覆核","人工复核","Review"),
             review?.let { tr(language,"提交修訂 ${it.revision.number} · ${if (it.confirmation != null) "已確認" else "待覆核"}","提交修订 ${it.revision.number} · ${if (it.confirmation != null) "已确认" else "待复核"}","Revision ${it.revision.number} · ${if (it.confirmation != null) "Confirmed" else "Pending review"}") }) {
             TextButton(onClick = { controller.updateProjectUi(projectId) { it.copy(reviewWorkspace = false) } }, enabled = !state.busy && (review == null || !guardNavigation)) { Text(tr(language,"返回列表","返回列表","Back to list")) }
-            val ordered = orderedSummaries
-            val index = ordered.indexOfFirst { it.submissionId == activeId }
-            OutlinedButton(onClick = { ordered.getOrNull(index - 1)?.let { open(it.submissionId) } }, enabled = index > 0 && !state.busy && !guardNavigation) { Text(tr(language,"上一份","上一份","Previous")) }
-            OutlinedButton(onClick = { ordered.getOrNull(index + 1)?.let { open(it.submissionId) } }, enabled = index >= 0 && index < ordered.lastIndex && !state.busy && !guardNavigation) { Text(tr(language,"下一份","下一份","Next")) }
+            OutlinedButton(onClick = { neighbors.previousSubmissionId?.let(::open) }, enabled = neighbors.previousSubmissionId != null && !state.busy && !loading && !guardNavigation) { Text(tr(language,"上一份","上一份","Previous")) }
+            OutlinedButton(onClick = { neighbors.nextSubmissionId?.let(::open) }, enabled = neighbors.nextSubmissionId != null && !state.busy && !loading && !guardNavigation) { Text(tr(language,"下一份","下一份","Next")) }
             if (review != null) {
                 var more by remember { mutableStateOf(false) }
                 Box {
@@ -315,7 +335,7 @@ import java.time.format.DateTimeFormatter
                         DropdownMenuItem(text = { Text(tr(language,"補頁／替換修訂","补页／替换修订","Create page revision")) }, onClick = { more = false; controller.perform { val draft = repositories.submissions.beginRevision(review.submission.id); controller.updateProjectUi(projectId) { it.copy(collectionDraftId = draft.id) }; navigate(WorkspaceSection.COLLECTION) } }, enabled = !state.busy && !guardNavigation)
                         DropdownMenuItem(text = { Text(tr(language,"重試辨識","重试识别","Retry recognition")) }, onClick = { more = false; controller.perform { review.job?.let { repositories.intelligence.retryRecognition(it.id) } } }, enabled = !state.busy && review.job?.status in listOf(RecognitionJobStatus.FAILED, RecognitionJobStatus.PAUSED))
                         DropdownMenuItem(text={Text(tr(language,"辨識設定","识别设置","Recognition settings"))},onClick={more=false;recognitionSettings=true},enabled=!state.busy && !guardNavigation)
-                        DropdownMenuItem(text={Text(tr(language,"以已確認設定重跑本份","以已确认设置重跑本份","Rerun with confirmed settings"))},onClick={more=false;rerunIds=listOf(review.submission.id)},enabled=!state.busy && !guardNavigation && review.confirmation==null && imagesReady)
+                        DropdownMenuItem(text={Text(tr(language,"以已確認設定重跑本份","以已确认设置重跑本份","Rerun with confirmed settings"))},onClick={more=false;rerunTargets=listOf(RecognitionRerunTarget(review.submission.id,review.revision.id,review.job?.id,review.template.id))},enabled=!state.busy && !guardNavigation && review.confirmation==null && imagesReady)
                     }
                 }
                 Button(onClick = {
@@ -573,7 +593,7 @@ internal fun planAnswerRecoveryCarryForward(before: ReviewWorkspace, after: Answ
                 }
                 newSnapshot = export(projectId, includeUnresolved)
                 controller.updateProjectUi(projectId) { it.copy(exportTab = 2) }
-            } }, enabled = state.template != null && state.submissions.any { it.currentRevisionId != null } && !state.busy) { Text(tr(language,"產生 Excel 快照","生成 Excel 快照","Generate Excel snapshot")) }
+            } }, enabled = state.template != null && state.projects.any { it.project.id == projectId && it.submittedCount>0 } && !state.busy) { Text(tr(language,"產生 Excel 快照","生成 Excel 快照","Generate Excel snapshot")) }
         }
         InspectorTabs(listOf(tr(language,"輸出設定","输出设置","Output settings"), tr(language,"欄位與列","字段和列","Fields & columns"), tr(language,"歷史快照","历史快照","Snapshot history")), ui.exportTab.coerceIn(0, 2)) { index -> controller.updateProjectUi(projectId) { it.copy(exportTab = index) } }
         Box(Modifier.weight(1f).fillMaxWidth()) {
@@ -654,9 +674,12 @@ internal fun planAnswerRecoveryCarryForward(before: ReviewWorkspace, after: Answ
                                     Text(formatSnapshotTime(snapshot.createdAtEpochMillis))
                                     Text(tr(language,"輸出設定 v${snapshot.outputVersion}","输出设置 v${snapshot.outputVersion}","Output settings v${snapshot.outputVersion}"), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
-                                TableCell(snapshot.records.size.toString(), Modifier.width(90.dp))
-                                TableCell(snapshot.excludedReasons.size.toString(), Modifier.width(90.dp))
-                                OutlinedButton(onClick = { chooseOutput(language, project.project.name + "-${snapshot.id.take(8)}.xlsx")?.let { target -> controller.perform { saveExternal(snapshot, target) } } }, enabled = !state.busy, modifier = Modifier.width(140.dp)) { Text(tr(language,"另存／重試","另存／重试","Save / retry")) }
+                                TableCell(snapshot.recordCount.toString(), Modifier.width(90.dp))
+                                TableCell(snapshot.excludedCount.toString(), Modifier.width(90.dp))
+                                OutlinedButton(onClick = { chooseOutput(language, project.project.name + "-${snapshot.id.take(8)}.xlsx")?.let { target -> controller.perform {
+                                    val full = requireNotNull(repositories.intelligence.getExportSnapshot(snapshot.id)) { "EXPORT_UNAVAILABLE" }
+                                    saveExternal(full, target)
+                                } } }, enabled = !state.busy, modifier = Modifier.width(140.dp)) { Text(tr(language,"另存／重試","另存／重试","Save / retry")) }
                             }
                             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = .55f))
                         } }

@@ -57,6 +57,7 @@ class SecureDatabase private constructor(private val connection: Connection) : C
                     statement.execute("PRAGMA journal_mode=DELETE")
                     statement.execute("PRAGMA synchronous=FULL")
                 }
+                QueryFunctions.register(connection)
                 return SecureDatabase(connection).apply { transaction { db ->
                     db.createStatement().use { statement ->
                         val version = statement.executeQuery("PRAGMA user_version").use { it.next(); it.getInt(1) }
@@ -71,6 +72,7 @@ class SecureDatabase private constructor(private val connection: Connection) : C
                         // Check both existing tables before accepting an already-versioned database.
                         statement.executeQuery("SELECT kind,id,project_id,payload FROM pc_records LIMIT 0").close()
                         statement.executeQuery("SELECT key,value FROM pc_meta LIMIT 0").close()
+                        QueryIndexes.ensure(db)
                         if (version < 2) statement.execute("PRAGMA user_version=2")
                     }
                 } }
